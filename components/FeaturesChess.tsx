@@ -25,10 +25,6 @@ export function FeaturesChess() {
             <p className="text-white/60 font-body font-light text-sm md:text-base mb-8 max-w-md">
               Integrate ADS-B aviation signals, maritime AIS data, and satellite orbital trajectories. See exactly when specific regions are being observed.
             </p>
-            <button className="liquid-glass-strong rounded-full px-5 py-2.5 flex items-center gap-2 text-white font-body text-sm hover:scale-105 transition-transform">
-              Learn more
-              <ArrowUpRight className="h-4 w-4" />
-            </button>
           </div>
           <div className="flex-1 w-full max-w-lg lg:max-w-none">
             <div className="liquid-glass rounded-2xl overflow-hidden aspect-[4/3] relative">
@@ -52,10 +48,6 @@ export function FeaturesChess() {
             <p className="text-white/60 font-body font-light text-sm md:text-base mb-8 max-w-md">
               Large language models and computer vision analyze transient signals to identify patterns. Rerouted flights + GPS jamming = Situational awareness.
             </p>
-            <button className="liquid-glass-strong rounded-full px-5 py-2.5 flex items-center gap-2 text-white font-body text-sm hover:scale-105 transition-transform">
-              See how it works
-              <ArrowUpRight className="h-4 w-4" />
-            </button>
           </div>
           <div className="flex-1 w-full max-w-lg lg:max-w-none">
             <div className="liquid-glass rounded-2xl overflow-hidden aspect-[4/3] relative">

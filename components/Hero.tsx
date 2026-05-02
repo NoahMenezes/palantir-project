@@ -6,7 +6,7 @@ import { BlurText } from "./BlurText";
 
 export function Hero() {
   return (
-    <section className="sticky top-0 h-screen w-full overflow-hidden flex flex-col items-center z-10">
+    <section className="fixed top-0 left-0 h-screen w-full overflow-hidden flex flex-col items-center z-0">
       <video
         autoPlay
         loop

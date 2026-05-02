@@ -10,7 +10,10 @@ export default function Home() {
         <Navbar />
         <Hero />
         
-        <div className="relative z-20 bg-black">
+        {/* Spacer to show the fixed hero background */}
+        <div className="h-screen w-full pointer-events-none" />
+        
+        <div className="relative z-10 bg-black shadow-[0_-50px_100px_rgba(0,0,0,1)]">
           <FeaturesChess />
           <FeaturesGrid />
         </div>
