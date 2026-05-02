@@ -6,7 +6,7 @@ import { BlurText } from "./BlurText";
 
 export function Hero() {
   return (
-    <section className="relative overflow-visible h-[1000px] flex flex-col items-center">
+    <section className="sticky top-0 h-screen w-full overflow-hidden flex flex-col items-center z-10">
       <video
         autoPlay
         loop
@@ -27,7 +27,7 @@ export function Hero() {
         style={{ background: "linear-gradient(to bottom, transparent, black)" }}
       ></div>
 
-      <div className="relative z-10 flex flex-col items-center pt-[150px] w-full px-4 text-center">
+      <div className="relative z-10 flex flex-col items-center pt-[150px] w-full px-4 text-center h-full pb-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

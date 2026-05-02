@@ -10,7 +10,7 @@ export default function Home() {
         <Navbar />
         <Hero />
         
-        <div className="bg-black">
+        <div className="relative z-20 bg-black">
           <FeaturesChess />
           <FeaturesGrid />
         </div>
