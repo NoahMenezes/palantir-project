@@ -1,9 +1,7 @@
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
-import { StartSection } from "@/components/StartSection";
 import { FeaturesChess } from "@/components/FeaturesChess";
 import { FeaturesGrid } from "@/components/FeaturesGrid";
-import { Stats } from "@/components/Stats";
 
 export default function Home() {
   return (
@@ -13,10 +11,8 @@ export default function Home() {
         <Hero />
         
         <div className="bg-black">
-          <StartSection />
           <FeaturesChess />
           <FeaturesGrid />
-          <Stats />
         </div>
       </div>
     </div>
