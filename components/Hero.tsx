@@ -13,7 +13,7 @@ export function Hero() {
         muted
         playsInline
         poster="/images/hero_bg.jpeg"
-        className="absolute left-0 w-full h-auto object-contain z-0 top-[20%]"
+        className="absolute inset-0 w-full h-full object-cover z-0"
       >
         <source
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260307_083826_e938b29f-a43a-41ec-a153-3d4730578ab8.mp4"
@@ -38,13 +38,13 @@ export function Hero() {
             New
           </span>
           <span className="text-white text-xs font-body font-medium pr-3">
-            Introducing AI-powered web design.
+            Introducing Global Intelligence
           </span>
         </motion.div>
 
         <BlurText
-          text="The Website Your Brand Deserves"
-          className="text-6xl md:text-7xl lg:text-[5.5rem] font-heading italic text-foreground leading-[0.8] max-w-2xl tracking-[-4px] justify-center"
+          text="The God's Eye View of Global Activity"
+          className="text-6xl md:text-7xl lg:text-[5.5rem] font-heading italic text-foreground leading-[0.8] max-w-4xl tracking-[-4px] justify-center"
           delay={100}
         />
 
@@ -52,9 +52,9 @@ export function Hero() {
           initial={{ filter: "blur(10px)", opacity: 0, y: 20 }}
           animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="mt-6 text-sm md:text-base text-white/70 font-body font-light leading-tight max-w-lg"
+          className="mt-6 text-sm md:text-base text-white/70 font-body font-light leading-tight max-w-2xl"
         >
-          Stunning design. Blazing performance. Built by AI, refined by experts. This is web design, wildly reimagined.
+          Unify scattered open-source signals—flights, ships, satellites, and disruptions—into a single interactive 4D view. Track world events as they unfold.
         </motion.p>
 
         <motion.div

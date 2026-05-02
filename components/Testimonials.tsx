@@ -3,19 +3,19 @@
 export function Testimonials() {
   const testimonials = [
     {
-      quote: "A complete rebuild in five days. The result outperformed everything we'd spent months building before.",
+      quote: "The ability to correlate GPS jamming with maritime disruptions changed how we track conflict zones.",
+      name: "Alex Rivera",
+      role: "Intelligence Analyst"
+    },
+    {
+      quote: "Finally, a single pane of glass for global activity. The 4D timeline is a game-changer for incident reconstruction.",
       name: "Sarah Chen",
-      role: "CEO, Luminary"
+      role: "Operations Director"
     },
     {
-      quote: "Conversions up 4x. That's not a typo. The design just works differently when it's built on real data.",
+      quote: "The God's Eye View isn't just a metaphor. It's the most powerful geospatial tool we've ever used.",
       name: "Marcus Webb",
-      role: "Head of Growth, Arcline"
-    },
-    {
-      quote: "They didn't just design our site. They defined our brand. World-class doesn't begin to cover it.",
-      name: "Elena Voss",
-      role: "Brand Director, Helix"
+      role: "Geospatial Expert"
     }
   ];
 

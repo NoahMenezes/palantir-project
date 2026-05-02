@@ -28,15 +28,15 @@ export function StartSection() {
 
       <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-2xl mx-auto">
         <div className="liquid-glass rounded-full px-3.5 py-1 mb-6 text-xs font-medium text-white font-body">
-          How It Works
+          The Intelligence Loop
         </div>
         
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading italic tracking-tight leading-[0.9] text-white mb-6">
-          You dream it. We ship it.
+          Observe. Orient. Decide. Act.
         </h2>
         
         <p className="text-white/60 font-body font-light text-sm md:text-base max-w-lg mb-10">
-          Share your vision. Our AI handles the rest--wireframes, design, code, launch. All in days, not quarters.
+          Automating the OODA loop to transform raw geospatial data into actionable intelligence. From real-time ingestion to immersive 4D visualization.
         </p>
         
         <button className="liquid-glass-strong rounded-full px-6 py-3 flex items-center gap-2 text-white font-body font-medium transition-transform hover:scale-105">

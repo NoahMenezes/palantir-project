@@ -11,7 +11,7 @@ export function FeaturesChess() {
           Capabilities
         </div>
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading italic text-white tracking-tight leading-[0.9]">
-          Pro features. Zero complexity.
+          Global Data. Unifed View.
         </h2>
       </div>
 
@@ -20,10 +20,10 @@ export function FeaturesChess() {
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
           <div className="flex-1 flex flex-col items-start text-left">
             <h3 className="text-3xl md:text-4xl font-heading italic text-white mb-6">
-              Designed to convert. Built to perform.
+              Unified Live Data Streams
             </h3>
             <p className="text-white/60 font-body font-light text-sm md:text-base mb-8 max-w-md">
-              Every pixel is intentional. Our AI studies what works across thousands of top sites--then builds yours to outperform them all.
+              Integrate ADS-B aviation signals, maritime AIS data, and satellite orbital trajectories. See exactly when specific regions are being observed.
             </p>
             <button className="liquid-glass-strong rounded-full px-5 py-2.5 flex items-center gap-2 text-white font-body text-sm hover:scale-105 transition-transform">
               Learn more
@@ -47,10 +47,10 @@ export function FeaturesChess() {
         <div className="flex flex-col lg:flex-row-reverse items-center gap-12 lg:gap-20">
           <div className="flex-1 flex flex-col items-start text-left">
             <h3 className="text-3xl md:text-4xl font-heading italic text-white mb-6">
-              It gets smarter. Automatically.
+              AI-Driven Correlation Engine
             </h3>
             <p className="text-white/60 font-body font-light text-sm md:text-base mb-8 max-w-md">
-              Your site evolves on its own. AI monitors every click, scroll, and conversion--then optimizes in real time. No manual updates. Ever.
+              Large language models and computer vision analyze transient signals to identify patterns. Rerouted flights + GPS jamming = Situational awareness.
             </p>
             <button className="liquid-glass-strong rounded-full px-5 py-2.5 flex items-center gap-2 text-white font-body text-sm hover:scale-105 transition-transform">
               See how it works

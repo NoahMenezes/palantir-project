@@ -6,23 +6,23 @@ export function FeaturesGrid() {
   const features = [
     {
       icon: <Zap className="h-5 w-5 text-white" />,
-      title: "Days, Not Months",
-      description: "Concept to launch at a pace that redefines fast. Because waiting isn't a strategy."
+      title: "Robust Sensing Layer",
+      description: "Continuously ingest massive volumes of real-time data from diverse OSINT sources worldwide."
     },
     {
       icon: <Palette className="h-5 w-5 text-white" />,
-      title: "Obsessively Crafted",
-      description: "Every detail considered. Every element refined. Design so precise, it feels inevitable."
+      title: "AI Orientation",
+      description: "Computer vision detects objects while LLMs infer context and relationships across multiple data layers."
     },
     {
       icon: <BarChart3 className="h-5 w-5 text-white" />,
-      title: "Built to Convert",
-      description: "Layouts informed by data. Decisions backed by performance. Results you can measure."
+      title: "Prioritized Anomalies",
+      description: "Instead of raw alerts, the system highlights critical events, enabling faster decision-making."
     },
     {
       icon: <Shield className="h-5 w-5 text-white" />,
-      title: "Secure by Default",
-      description: "Enterprise-grade protection comes standard. SSL, DDoS mitigation, compliance. All included."
+      title: "Fusion Layer",
+      description: "A centralized command interface integrating all signals into a unified 4D operational view on a 3D globe."
     }
   ];
 

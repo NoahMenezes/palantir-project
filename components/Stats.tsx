@@ -4,10 +4,10 @@ import { HlsVideo } from "./HlsVideo";
 
 export function Stats() {
   const stats = [
-    { value: "200+", label: "Sites launched" },
-    { value: "98%", label: "Client satisfaction" },
-    { value: "3.2x", label: "More conversions" },
-    { value: "5 days", label: "Average delivery" }
+    { value: "1.2B+", label: "Signals processed daily" },
+    { value: "4D", label: "Operational visibility" },
+    { value: "85ms", label: "Ingestion latency" },
+    { value: "99.9%", label: "Uptime of global sensors" }
   ];
 
   return (
