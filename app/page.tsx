@@ -2,6 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { FeaturesGrid } from "@/components/FeaturesGrid";
 import { Timeline } from "@/components/Timeline";
+import { Footer } from "@/components/Footer";
 
 export default function Home() {
   return (
@@ -29,8 +30,13 @@ export default function Home() {
           <div className="h-screen w-full pointer-events-none" />
           
           {/* The actual timeline content that slides over */}
-          <div className="bg-black shadow-[0_-100px_100px_rgba(0,0,0,1)] min-h-screen relative z-30">
+          <div className="bg-black shadow-[0_-100px_100px_rgba(0,0,0,1)] relative z-30">
             <Timeline />
+          </div>
+
+          {/* Section 4: Footer (The Final Overlap) */}
+          <div className="relative z-40">
+            <Footer />
           </div>
         </div>
       </div>
