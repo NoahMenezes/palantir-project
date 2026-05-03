@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import { ArrowUpRight, Github, Twitter, Linkedin, Mail } from "lucide-react";
 import Link from "next/link";
 

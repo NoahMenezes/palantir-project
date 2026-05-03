@@ -16,8 +16,8 @@ const barlow = Barlow({
 });
 
 export const metadata: Metadata = {
-  title: "AI Web Design Agency",
-  description: "The Website Your Brand Deserves. AI-powered web design.",
+  title: "Palantir Project | Global Intelligence",
+  description: "Next-generation OSINT and global activity monitoring platform.",
 };
 
 export default function RootLayout({

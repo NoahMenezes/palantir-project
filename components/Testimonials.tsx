@@ -26,7 +26,7 @@ export function Testimonials() {
           What They Say
         </div>
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading italic text-white tracking-tight leading-[0.9]">
-          Don't take our word for it.
+          Don&apos;t take our word for it.
         </h2>
       </div>
 

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 
 export function FeaturesChess() {
