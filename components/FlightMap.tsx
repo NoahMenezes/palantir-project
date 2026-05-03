@@ -10,6 +10,7 @@ import Link from "next/link";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { X, ExternalLink, Globe2, Map as MapIcon, Play, Sparkles, Search, Eye, Layout, Crosshair, MonitorOff, EyeOff } from "lucide-react";
 import * as satellite from "satellite.js";
+import { WeatherControls, WeatherLayerType } from "./WeatherControls";
 
 // Restored the cool dark-mode Palantir map!
 const MAP_STYLE =
@@ -163,9 +164,15 @@ interface FlightMapProps {
   activeLayers: Record<string, boolean>;
   tacticalOptions: TacticalOptions;
   onRestoreHud?: () => void;
+  activeWeatherLayer?: WeatherLayerType | null;
+  setActiveWeatherLayer?: (layer: WeatherLayerType | null) => void;
+  weatherTime?: number;
+  setWeatherTime?: React.Dispatch<React.SetStateAction<number>>;
+  weatherHost?: string;
+  availableTimes?: number[];
 }
 
-export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, tacticalOptions, onRestoreHud }: FlightMapProps) {
+export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, tacticalOptions, onRestoreHud, activeWeatherLayer, setActiveWeatherLayer, weatherTime, setWeatherTime, weatherHost, availableTimes }: FlightMapProps) {
   const { bloom, sharpen, hud, sparse, density } = tacticalOptions;
   
   const [flights, setFlights] = useState<any[]>([]);
@@ -197,11 +204,7 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
   const fetchFlights = async () => {
     if (!activeLayers.flights) return;
     try {
-      // Send the current view state center to fetch local 250nm ADSB.lol data dynamically
-      const lat = viewState.latitude.toFixed(4);
-      const lng = viewState.longitude.toFixed(4);
-      
-      const res = await fetch(`/api/flights?lat=${lat}&lng=${lng}`);
+      const res = await fetch("/api/flights");
       if (!res.ok) throw new Error("Failed to fetch flight data");
 
       const data = await res.json();
@@ -475,9 +478,34 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
       data: [flightRoute],
       getPath: (d: any) => d.points,
       getColor: selectedFlight?.isSatellite ? [0, 229, 255, 200] : [255, 255, 255, 200],
-      getWidth: 3,
+      getLineColor: [0, 229, 255, 150],
       widthMinPixels: 2,
-    }) : null
+      getWidth: 3,
+    }) : null,
+
+    // WEATHER LAYER (RainViewer / OpenWeatherMap)
+    activeLayers.weather && activeWeatherLayer && weatherTime ? new TileLayer({
+      id: 'weather-tile-layer',
+      data: (activeWeatherLayer === 'radar' || activeWeatherLayer === 'precipitation' || activeWeatherLayer === 'satellite')
+        ? `${weatherHost}/v2/${activeWeatherLayer === 'satellite' ? 'satellite' : 'radar'}/${weatherTime}/256/{z}/{x}/{y}/2/1_1.png`
+        : `https://tile.openweathermap.org/map/${activeWeatherLayer === 'temperature' ? 'temp_new' : activeWeatherLayer === 'wind' ? 'wind_new' : activeWeatherLayer === 'humidity' ? 'clouds_new' : activeWeatherLayer === 'pressure' ? 'pressure_new' : 'clouds_new'}/{z}/{x}/{y}.png?appid=YOUR_OWM_API_KEY`,
+      minZoom: 0,
+      maxZoom: 12,
+      opacity: activeWeatherLayer === 'satellite' ? 0.8 : 0.6,
+      renderSubLayers: props => {
+        const bbox = props.tile.bbox as any;
+        const west = bbox.left || bbox.west;
+        const south = bbox.bottom || bbox.south;
+        const east = bbox.right || bbox.east;
+        const north = bbox.top || bbox.north;
+
+        return new BitmapLayer(props, {
+          data: undefined,
+          image: props.data,
+          bounds: [west, south, east, north]
+        });
+      }
+    }) : null,
   ].filter(Boolean);
 
   const views = isGlobeMode
@@ -533,21 +561,32 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
             onViewStateChange={(e) => setViewState(e.viewState as any)}
             controller={true}
             layers={layers}
-            getTooltip={({ object }) =>
-              object && !selectedFlight
-                ? `${object.callsign}\n${object.country}`
-                : null
-            }
+            getTooltip={({ object }) => {
+              if (!object || selectedFlight) return null;
+              if (object.tle1 && !activeLayers.satellites) return null;
+              if (object.callsign && !activeLayers.flights) return null;
+              return `${object.callsign || object.name}\n${object.country || "Orbital"}`;
+            }}
             style={{ position: "absolute", width: "100%", height: "100%" }}
           >
             {/* reuseMaps perfectly aligns Maplibre and DeckGL, but maplibre only works in 2D MapView */}
             {!isGlobeMode && (
               <Map mapStyle={MAP_STYLE} renderWorldCopies={false} reuseMaps />
             )}
+            
+            {activeLayers.weather && setActiveWeatherLayer && setWeatherTime && (
+              <WeatherControls
+                activeWeatherLayer={activeWeatherLayer || null}
+                setActiveWeatherLayer={setActiveWeatherLayer}
+                weatherTime={weatherTime || 0}
+                setWeatherTime={setWeatherTime}
+                availableTimes={availableTimes || []}
+              />
+            )}
           </DeckGL>
 
-          {/* Top Left Indicator */}
-          <div className={`absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 flex flex-col gap-1 pointer-events-none z-10 transition-opacity duration-300 ${!hud ? "opacity-0" : "opacity-100"}`}>
+          {/* Top Right Indicator */}
+          <div className={`absolute top-4 right-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 flex flex-col gap-1 pointer-events-none z-10 transition-opacity duration-300 ${!hud ? "opacity-0" : "opacity-100"}`}>
             <div className="flex items-center gap-3">
               <div className="relative flex h-2 w-2">
                 <span

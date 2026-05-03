@@ -17,22 +17,25 @@ try {
   console.warn("Could not load flights fallback data");
 }
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  
-  // Default to somewhere interesting (e.g. Europe or US) if no coordinates provided
-  const lat = searchParams.get('lat') || "48.8566";
-  const lng = searchParams.get('lng') || "2.3522";
-  
-  // ADSB.lol allows maximum 250 nautical miles radius
-  const radius = "250"; 
+export async function GET() {
+  const username = process.env.clientId;
+  const password = process.env.clientSecret;
+
+  if (!username || !password) {
+    return NextResponse.json({ error: "Missing OpenSky credentials in .env" }, { status: 500 });
+  }
+
+  const auth = Buffer.from(`${username}:${password}`).toString("base64");
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    const res = await fetch(`https://api.adsb.lol/v2/lat/${lat}/lon/${lng}/dist/${radius}`, {
-      next: { revalidate: 5 }, // ADSB is real-time, ping every 5s
+    const res = await fetch("https://opensky-network.org/api/states/all", {
+      headers: {
+        "Authorization": `Basic ${auth}`
+      },
+      next: { revalidate: 15 },
       signal: controller.signal
     });
     
@@ -40,34 +43,34 @@ export async function GET(request: Request) {
 
     if (!res.ok) {
       if (globalFlightsCache) return NextResponse.json({ flights: globalFlightsCache });
-      return NextResponse.json({ error: `Failed to fetch from ADSB.lol: ${res.status}` }, { status: res.status });
+      return NextResponse.json({ error: `Failed to fetch from OpenSky: ${res.status}` }, { status: res.status });
     }
 
     const data = await res.json();
     
-    if (!data.ac || data.ac.length === 0) {
+    if (!data.states || data.states.length === 0) {
       if (globalFlightsCache) return NextResponse.json({ flights: globalFlightsCache });
-      return NextResponse.json({ flights: [] });
+      return NextResponse.json({ error: "OpenSky rate limited (0 states)" }, { status: 429 });
     }
 
-    // ADSB.lol / ADSBExchange v2 Schema Mapping
-    const validFlights = data.ac
-      .filter((ac: any) => ac.lat !== undefined && ac.lon !== undefined)
-      .map((ac: any) => ({
-        id: ac.hex,
-        callsign: ac.flight ? ac.flight.trim() : "UNKNOWN",
-        country: "N/A", // ADSBx doesn't always provide origin_country directly in this endpoint
-        time_position: Math.floor(Date.now() / 1000),
-        last_contact: Math.floor(Date.now() / 1000),
-        lng: ac.lon,
-        lat: ac.lat,
-        baro_altitude: ac.alt_baro === "ground" ? 0 : (ac.alt_baro * 0.3048), // Convert ft to meters
-        velocity: ac.gs * 0.514444, // Convert knots to m/s
-        track: ac.track || 0,
-        vertical_rate: (ac.geom_rate || ac.baro_rate || 0) * 0.00508, // Convert ft/min to m/s
-        geo_altitude: ac.alt_geom * 0.3048,
-        squawk: ac.squawk,
-        position_source: ac.type
+    // Indices: 0: icao24, 1: callsign, 2: origin_country, 5: longitude, 6: latitude, 8: on_ground
+    const validFlights = data.states
+      .filter((state: any) => state[5] !== null && state[6] !== null && state[8] === false)
+      .map((state: any) => ({
+        id: state[0],
+        callsign: state[1] ? state[1].trim() : "UNKNOWN",
+        country: state[2],
+        time_position: state[3],
+        last_contact: state[4],
+        lng: state[5],
+        lat: state[6],
+        baro_altitude: state[7],
+        velocity: state[9],
+        track: state[10] || 0,
+        vertical_rate: state[11],
+        geo_altitude: state[13],
+        squawk: state[14],
+        position_source: state[16]
       }));
 
     globalFlightsCache = validFlights;
@@ -78,8 +81,9 @@ export async function GET(request: Request) {
     if (globalFlightsCache) {
       return NextResponse.json({ flights: globalFlightsCache });
     }
-    if (error.name === 'AbortError' || error.message?.includes('fetch failed') || error.message?.includes('ETIMEDOUT')) {
-      return NextResponse.json({ error: "ADSB.lol API Timeout" }, { status: 504 });
+    // Suppress the giant ETIMEDOUT stack traces in the terminal
+    if (error.name === 'AbortError' || error.message?.includes('fetch failed') || error.message?.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
+      return NextResponse.json({ error: "OpenSky API Timeout" }, { status: 504 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
