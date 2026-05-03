@@ -9,6 +9,7 @@ import Map, { NavigationControl } from "react-map-gl/maplibre";
 import Link from "next/link";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { X, ExternalLink, Globe2, Map as MapIcon, Play, Sparkles, Search, Eye, Layout, Crosshair, MonitorOff, EyeOff } from "lucide-react";
+import * as satellite from "satellite.js";
 
 // Restored the cool dark-mode Palantir map!
 const MAP_STYLE =
@@ -19,6 +20,12 @@ const AIRPLANE_SVG =
   "data:image/svg+xml;charset=utf-8," +
   encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>',
+  );
+
+const SATELLITE_SVG =
+  "data:image/svg+xml;charset=utf-8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2L10.5 5h3L12 2zM4 10.5L2 12l2 1.5v-3zM20 10.5v3l2-1.5-2-1.5zM12 22l1.5-3h-3L12 22zM7 7v10h10V7H7zm8 8H9V9h6v6z"/></svg>',
   );
 
 function getAltitudeColor(altitudeMeters: number): [number, number, number] {
@@ -152,19 +159,24 @@ interface TacticalOptions {
 
 interface FlightMapProps {
   onFlightsUpdate?: (count: number) => void;
+  onSatellitesUpdate?: (count: number) => void;
+  activeLayers: Record<string, boolean>;
   tacticalOptions: TacticalOptions;
   onRestoreHud?: () => void;
 }
 
-export function FlightMap({ onFlightsUpdate, tacticalOptions, onRestoreHud }: FlightMapProps) {
+export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, tacticalOptions, onRestoreHud }: FlightMapProps) {
   const { bloom, sharpen, hud, sparse, density } = tacticalOptions;
   
   const [flights, setFlights] = useState<any[]>([]);
+  const [satellites, setSatellites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFlight, setSelectedFlight] = useState<any | null>(null);
   const [flightRoute, setFlightRoute] = useState<any | null>(null);
   const [isGlobeMode, setIsGlobeMode] = useState(false);
+  const [timeTick, setTimeTick] = useState(Date.now());
+  const requestRef = useRef<number | null>(null);
 
   // Controlling the viewState manually allows us to fix the zoom buttons and the "slipping" bug simultaneously
   const [viewState, setViewState] = useState({
@@ -183,6 +195,7 @@ export function FlightMap({ onFlightsUpdate, tacticalOptions, onRestoreHud }: Fl
   };
 
   const fetchFlights = async () => {
+    if (!activeLayers.flights) return;
     try {
       const res = await fetch("/api/flights");
       if (!res.ok) throw new Error("Failed to fetch flight data");
@@ -226,16 +239,73 @@ export function FlightMap({ onFlightsUpdate, tacticalOptions, onRestoreHud }: Fl
   };
 
   useEffect(() => {
-    fetchFlights();
-    // Refresh flights every 15 seconds to create real-time movement and avoid strict API rate limits
-    const interval = setInterval(fetchFlights, 15000);
-    return () => clearInterval(interval);
-  }, [flights.length]);
+    if (activeLayers.flights) {
+      fetchFlights();
+      // Refresh flights every 15 seconds to create real-time movement and avoid strict API rate limits
+      const interval = setInterval(fetchFlights, 15000);
+      return () => clearInterval(interval);
+    } else {
+      setFlights([]);
+      if (onFlightsUpdate) onFlightsUpdate(0);
+    }
+  }, [activeLayers.flights]);
+
+  const fetchSatellites = async () => {
+    if (!activeLayers.satellites) return;
+    try {
+      const res = await fetch("/api/satellites");
+      if (!res.ok) throw new Error("Failed to fetch satellites");
+      const data = await res.json();
+      if (data.satellites) {
+        // Parse TLEs into satrec objects immediately
+        const parsed = data.satellites.map((s: any) => {
+          try {
+            return { ...s, satrec: satellite.twoline2satrec(s.tle1, s.tle2) };
+          } catch (e) { return null; }
+        }).filter(Boolean);
+        setSatellites(parsed);
+        if (onSatellitesUpdate) onSatellitesUpdate(parsed.length);
+      }
+    } catch (err) {
+      console.warn("Satellite fetch warning:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeLayers.satellites) {
+      fetchSatellites();
+      // Satellite TLEs rarely change, re-fetch every 1 hour is fine
+      const interval = setInterval(fetchSatellites, 3600000);
+      return () => clearInterval(interval);
+    } else {
+      setSatellites([]);
+      if (onSatellitesUpdate) onSatellitesUpdate(0);
+    }
+  }, [activeLayers.satellites]);
+
+  // Real-time animation loop for satellites
+  useEffect(() => {
+    if (activeLayers.satellites) {
+      let lastUpdate = Date.now();
+      const updateTick = () => {
+        const now = Date.now();
+        // Update at ~10fps to save CPU but remain smooth
+        if (now - lastUpdate > 100) {
+          setTimeTick(now);
+          lastUpdate = now;
+        }
+        requestRef.current = requestAnimationFrame(updateTick);
+      };
+      requestRef.current = requestAnimationFrame(updateTick);
+      return () => cancelAnimationFrame(requestRef.current!);
+    }
+  }, [activeLayers.satellites]);
 
   // Fetch Origin/Destination routing when a flight is selected!
   useEffect(() => {
     if (
       selectedFlight &&
+      !selectedFlight.isSatellite &&
       selectedFlight.callsign &&
       selectedFlight.callsign !== "UNKNOWN"
     ) {
@@ -272,7 +342,7 @@ export function FlightMap({ onFlightsUpdate, tacticalOptions, onRestoreHud }: Fl
 
   const layers = [
     isGlobeMode ? globeBackgroundLayer : null,
-    new IconLayer({
+    activeLayers.flights ? new IconLayer({
       id: "flight-icons",
       data: sparse ? flights.slice(0, Math.max(1, Math.floor(flights.length * (density / 100)))) : flights,
       pickable: true,
@@ -305,7 +375,53 @@ export function FlightMap({ onFlightsUpdate, tacticalOptions, onRestoreHud }: Fl
           }));
         }
       },
-    }),
+    }) : null,
+    activeLayers.satellites ? new IconLayer({
+      id: "satellite-icons",
+      data: sparse ? satellites.slice(0, Math.max(1, Math.floor(satellites.length * (density / 100)))) : satellites,
+      pickable: true,
+      getIcon: (d) => ({
+        url: SATELLITE_SVG,
+        width: 128,
+        height: 128,
+        anchorY: 64,
+        mask: true,
+      }),
+      getPosition: (d: any) => {
+        if (!d.satrec) return [0, 0, 0];
+        try {
+          const date = new Date(timeTick);
+          const positionAndVelocity = satellite.propagate(d.satrec, date);
+          if (positionAndVelocity.position && typeof positionAndVelocity.position !== "boolean") {
+            const gmst = satellite.gstime(date);
+            const positionGd = satellite.eciToGeodetic(positionAndVelocity.position as any, gmst);
+            return [
+              satellite.degreesLong(positionGd.longitude),
+              satellite.degreesLat(positionGd.latitude),
+              isGlobeMode ? positionGd.height * 1000 : 0
+            ];
+          }
+        } catch(e) {}
+        return [0, 0, 0];
+      },
+      getSize: (d) => (isGlobeMode ? 24 : bloom > 120 ? 20 : 16),
+      getColor: (d: any) => [0, 229, 255],
+      autoHighlight: true,
+      highlightColor: [255, 255, 255],
+      updateTriggers: {
+        getPosition: [timeTick],
+      },
+      onClick: (info) => {
+        if (info.object) {
+          setSelectedFlight({
+            ...info.object,
+            callsign: info.object.name,
+            isSatellite: true,
+          });
+        }
+      },
+    }) : null,
+    flightRoute && flightRoute.points && activeLayers.flights
   ].filter(Boolean);
 
   const views = isGlobeMode
@@ -401,11 +517,11 @@ export function FlightMap({ onFlightsUpdate, tacticalOptions, onRestoreHud }: Fl
           {/* Bottom Panel Link */}
           <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-auto transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <Link
-              href={`/flights?from=${isGlobeMode ? 'globe' : 'map'}`}
+              href={activeLayers.satellites && !activeLayers.flights ? `/satellites?from=${isGlobeMode ? 'globe' : 'map'}` : `/flights?from=${isGlobeMode ? 'globe' : 'map'}`}
               className="bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 text-[#00E5FF] backdrop-blur-md px-6 py-3 rounded-full border border-[#00E5FF]/30 transition-all font-mono text-xs uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(0,229,255,0.1)] hover:shadow-[0_0_30px_rgba(0,229,255,0.2)]"
             >
               <ExternalLink className="w-4 h-4" />
-              Open Global Flights Dashboard
+              {activeLayers.satellites && !activeLayers.flights ? "Open Global Satellites Dashboard" : "Open Global Flights Dashboard"}
             </Link>
           </div>
 

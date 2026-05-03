@@ -17,20 +17,22 @@ const LAYERS = [
 
 interface DataLayersSidebarProps {
   flightCount?: number;
+  satelliteCount?: number;
+  activeLayers: Record<string, boolean>;
+  toggleLayer: (id: string) => void;
 }
 
-export function DataLayersSidebar({ flightCount }: DataLayersSidebarProps) {
+export function DataLayersSidebar({ flightCount, satelliteCount, activeLayers, toggleLayer }: DataLayersSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({});
-
-  const toggleLayer = (id: string) => {
-    setActiveLayers(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const getCountDisplay = (layerId: string, hardcodedCount: string) => {
     if (layerId === "flights" && flightCount !== undefined) {
       if (flightCount >= 1000) return `${(flightCount / 1000).toFixed(1)}K`;
       return flightCount.toString();
+    }
+    if (layerId === "satellites" && satelliteCount !== undefined) {
+      if (satelliteCount >= 1000) return `${(satelliteCount / 1000).toFixed(1)}K`;
+      return satelliteCount.toString();
     }
     return hardcodedCount;
   };

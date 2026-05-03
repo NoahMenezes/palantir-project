@@ -8,6 +8,17 @@ import { useState } from "react";
 
 export default function WorldviewPage() {
   const [flightCount, setFlightCount] = useState<number>(0);
+  const [satelliteCount, setSatelliteCount] = useState<number>(0);
+  
+  // By default, flights are visible
+  const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
+    flights: true,
+    satellites: false
+  });
+
+  const toggleLayer = (id: string) => {
+    setActiveLayers(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Tactical States
   const [bloom, setBloom] = useState(136);
@@ -47,7 +58,12 @@ export default function WorldviewPage() {
 
           {/* Left Side: Sidebars (DataLayers + Tactical) */}
           <div className={`w-full xl:w-[340px] shrink-0 pointer-events-auto flex flex-col gap-6 transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-            <DataLayersSidebar flightCount={flightCount} />
+            <DataLayersSidebar 
+              flightCount={flightCount} 
+              satelliteCount={satelliteCount}
+              activeLayers={activeLayers}
+              toggleLayer={toggleLayer}
+            />
             <div className="w-full">
               <TacticalSidebar
                 bloom={bloom} setBloom={setBloom}
@@ -64,6 +80,8 @@ export default function WorldviewPage() {
           <div className="flex-1 w-full min-h-[80vh] pointer-events-auto relative">
             <FlightMap
               onFlightsUpdate={setFlightCount}
+              onSatellitesUpdate={setSatelliteCount}
+              activeLayers={activeLayers}
               tacticalOptions={{ bloom, sharpen, hud, sparse, density }}
               onRestoreHud={() => setHud(true)}
             />
