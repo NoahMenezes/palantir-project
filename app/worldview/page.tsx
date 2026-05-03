@@ -1,15 +1,35 @@
-import { Navbar } from "@/components/Navbar";
+"use client";
+
 import { DataLayersSidebar } from "@/components/DataLayersSidebar";
 import { FlightMap } from "@/components/FlightMap";
+import { Navbar } from "@/components/Navbar";
+import { TacticalSidebar } from "@/components/TacticalSidebar";
+import { useState } from "react";
 
 export default function WorldviewPage() {
+  const [flightCount, setFlightCount] = useState<number>(0);
+
+  // Tactical States
+  const [bloom, setBloom] = useState(136);
+  const [sharpen, setSharpen] = useState(49);
+  const [hud, setHud] = useState(true);
+  const [sparse, setSparse] = useState(true);
+  const [density, setDensity] = useState(99);
+
+  const cleanUi = () => {
+    setHud(true);
+    setSparse(false);
+    setBloom(100);
+    setSharpen(50);
+  };
+
   return (
     <div className="bg-black min-h-screen relative text-white overflow-y-auto overflow-x-hidden flex flex-col">
       <Navbar />
 
       {/* UI Overlay */}
       <div className="relative z-10 w-full flex-1 p-4 lg:p-6 pt-24 lg:pt-32 flex flex-col">
-        
+
         {/* Header Section */}
         <div className="flex flex-col pointer-events-auto items-start mb-6">
           <div className="liquid-glass border border-white/10 rounded-xl px-4 py-2 mb-4 inline-flex items-center gap-2">
@@ -24,15 +44,31 @@ export default function WorldviewPage() {
 
         {/* Main Content Area */}
         <div className="flex flex-col xl:flex-row gap-6 w-full flex-1 items-stretch">
-          
+
           {/* Left Side: Data Layers Sidebar */}
-          <div className="w-full xl:w-[340px] shrink-0 pointer-events-auto">
-            <DataLayersSidebar />
+          <div className={`w-full xl:w-[320px] shrink-0 pointer-events-auto transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+            <DataLayersSidebar flightCount={flightCount} />
           </div>
-          
-          {/* Right Side: Flight Radar Map */}
+
+          {/* Middle: Flight Radar Map */}
           <div className="flex-1 w-full min-h-[80vh] pointer-events-auto relative">
-            <FlightMap />
+            <FlightMap
+              onFlightsUpdate={setFlightCount}
+              tacticalOptions={{ bloom, sharpen, hud, sparse, density }}
+              onRestoreHud={() => setHud(true)}
+            />
+          </div>
+
+          {/* Right Side: Tactical Sidebar */}
+          <div className={`w-full xl:w-[280px] shrink-0 pointer-events-auto transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+            <TacticalSidebar
+              bloom={bloom} setBloom={setBloom}
+              sharpen={sharpen} setSharpen={setSharpen}
+              hud={hud} setHud={setHud}
+              sparse={sparse} setSparse={setSparse}
+              density={density} setDensity={setDensity}
+              cleanUi={cleanUi}
+            />
           </div>
 
         </div>

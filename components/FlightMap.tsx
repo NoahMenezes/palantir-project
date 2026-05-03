@@ -142,20 +142,29 @@ const INITIAL_VIEW_STATE = {
   bearing: 0,
 };
 
-export function FlightMap() {
+interface TacticalOptions {
+  bloom: number;
+  sharpen: number;
+  hud: boolean;
+  sparse: boolean;
+  density: number;
+}
+
+interface FlightMapProps {
+  onFlightsUpdate?: (count: number) => void;
+  tacticalOptions: TacticalOptions;
+  onRestoreHud?: () => void;
+}
+
+export function FlightMap({ onFlightsUpdate, tacticalOptions, onRestoreHud }: FlightMapProps) {
+  const { bloom, sharpen, hud, sparse, density } = tacticalOptions;
+  
   const [flights, setFlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFlight, setSelectedFlight] = useState<any | null>(null);
   const [flightRoute, setFlightRoute] = useState<any | null>(null);
   const [isGlobeMode, setIsGlobeMode] = useState(false);
-
-  // Tactical Controls
-  const [bloom, setBloom] = useState(false);
-  const [hudEnabled, setHudEnabled] = useState(true);
-  const [panoptic, setPanoptic] = useState(false);
-  const [density, setDensity] = useState(100);
-  const [sharpen, setSharpen] = useState(50);
 
   // Controlling the viewState manually allows us to fix the zoom buttons and the "slipping" bug simultaneously
   const [viewState, setViewState] = useState({
@@ -184,13 +193,14 @@ export function FlightMap() {
       // Protect against empty arrays from timeout/throttling
       if (data.flights && data.flights.length > 0) {
         setFlights(data.flights);
+        if (onFlightsUpdate) onFlightsUpdate(data.flights.length);
 
         // If a flight is selected, automatically update its metrics with the new data
         setSelectedFlight((prev: any) => {
           if (!prev) return null;
           const updated = data.flights.find((f: any) => f.id === prev.id);
           
-          if (panoptic && updated) {
+          if (sparse && updated) {
             setViewState((v) => ({
               ...v,
               longitude: updated.lng,
@@ -264,7 +274,7 @@ export function FlightMap() {
     isGlobeMode ? globeBackgroundLayer : null,
     new IconLayer({
       id: "flight-icons",
-      data: panoptic ? flights.slice(0, Math.max(1, Math.floor(flights.length * (density / 100)))) : flights,
+      data: sparse ? flights.slice(0, Math.max(1, Math.floor(flights.length * (density / 100)))) : flights,
       pickable: true,
       getIcon: (d) => ({
         url: AIRPLANE_SVG,
@@ -279,7 +289,7 @@ export function FlightMap() {
         d.lat,
         isGlobeMode ? d.baro_altitude || 10000 : 0,
       ],
-      getSize: (d) => (isGlobeMode ? 32 : bloom ? 30 : 24),
+      getSize: (d) => (isGlobeMode ? 32 : bloom > 120 ? 30 : 24),
       getAngle: (d: any) => d.track || 0,
       getColor: (d: any) => getAltitudeColor(d.geo_altitude || d.baro_altitude),
       autoHighlight: true,
@@ -321,7 +331,7 @@ export function FlightMap() {
 
       <div className="w-full flex-1 relative group rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,229,255,0.05)] bg-[#0A0A0C] flex flex-row">
         {/* Custom Zoom Controls - Positioned outside DeckGL for perfect event handling */}
-        {hudEnabled && (
+        {hud && (
           <div className="absolute bottom-24 right-4 z-[100] flex flex-col gap-2 pointer-events-auto">
             <button
               onClick={() => handleZoom(1)}
@@ -342,7 +352,7 @@ export function FlightMap() {
         <div 
           className="flex-1 relative h-full transition-all duration-700" 
           style={{ 
-            filter: `contrast(${100 + (sharpen - 50)}%) saturate(${100 + (sharpen - 50) * 0.5}%) ${bloom ? 'brightness(1.15) drop-shadow(0 0 15px rgba(0,229,255,0.15))' : ''}` 
+            filter: `contrast(${100 + (sharpen - 50)}%) saturate(${100 + (sharpen - 50) * 0.5}%) ${bloom > 110 ? `brightness(1.15) drop-shadow(0 0 ${bloom/10}px rgba(0,229,255,0.15))` : ''}` 
           }}
         >
           <DeckGL
@@ -365,7 +375,7 @@ export function FlightMap() {
           </DeckGL>
 
           {/* Top Left Indicator */}
-          <div className={`absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 flex flex-col gap-1 pointer-events-none z-10 transition-opacity duration-300 ${!hudEnabled ? "opacity-0" : "opacity-100"}`}>
+          <div className={`absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 flex flex-col gap-1 pointer-events-none z-10 transition-opacity duration-300 ${!hud ? "opacity-0" : "opacity-100"}`}>
             <div className="flex items-center gap-3">
               <div className="relative flex h-2 w-2">
                 <span
@@ -389,7 +399,7 @@ export function FlightMap() {
           </div>
 
           {/* Bottom Panel Link */}
-          <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-auto transition-opacity duration-300 ${!hudEnabled ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+          <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-auto transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <Link
               href={`/flights?from=${isGlobeMode ? 'globe' : 'map'}`}
               className="bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 text-[#00E5FF] backdrop-blur-md px-6 py-3 rounded-full border border-[#00E5FF]/30 transition-all font-mono text-xs uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(0,229,255,0.1)] hover:shadow-[0_0_30px_rgba(0,229,255,0.2)]"
@@ -400,7 +410,7 @@ export function FlightMap() {
           </div>
 
           {/* Altitude Legend */}
-          <div className={`absolute bottom-4 right-4 bg-black/80 backdrop-blur-md p-3 rounded-lg border border-white/10 z-10 pointer-events-none transition-opacity duration-300 hidden md:block ${!hudEnabled ? "opacity-0" : "opacity-100"}`}>
+          <div className={`absolute bottom-4 right-4 bg-black/80 backdrop-blur-md p-3 rounded-lg border border-white/10 z-10 pointer-events-none transition-opacity duration-300 hidden md:block ${!hud ? "opacity-0" : "opacity-100"}`}>
             <span className="text-[9px] font-mono text-white/50 uppercase tracking-widest mb-2 block">
               Altitude (ft)
             </span>
@@ -413,71 +423,10 @@ export function FlightMap() {
               <span>40k+</span>
             </div>
           </div>
-
-          {/* Tactical Options Panel */}
-          {hudEnabled && (
-            <div className={`absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 w-48 pointer-events-auto z-[100] transition-opacity duration-300 ${selectedFlight ? "opacity-0 pointer-events-none hidden" : "opacity-100"} bg-black/80 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.8)]`}>
-              
-              <button className="flex justify-between items-center bg-white/5 hover:bg-white/10 transition-colors p-2 rounded text-white text-[10px] font-mono uppercase tracking-widest border border-white/5">
-                <span>Move</span>
-                <Play className="w-3 h-3 text-[#00E5FF]" />
-              </button>
-
-              <button onClick={() => setBloom(!bloom)} className="flex justify-between items-center bg-white/5 hover:bg-white/10 transition-colors p-2 rounded text-white text-[10px] font-mono uppercase tracking-widest border border-white/5">
-                <div className="flex gap-2 items-center">
-                  <Sparkles className={`w-3 h-3 ${bloom ? 'text-yellow-400' : 'text-white/50'}`} />
-                  <span className={bloom ? 'text-yellow-400' : ''}>Bloom</span>
-                </div>
-              </button>
-
-              <div className="bg-white/5 p-2 rounded border border-white/5 flex flex-col gap-2">
-                <div className="flex justify-between items-center text-[10px] font-mono text-[#00E5FF]">
-                  <div className="flex gap-2 items-center">
-                    <Search className="w-3 h-3" />
-                    <span>Sharpen</span>
-                  </div>
-                  <span>{sharpen}%</span>
-                </div>
-                <input type="range" min="0" max="100" value={sharpen} onChange={(e) => setSharpen(Number(e.target.value))} className="w-full accent-[#00E5FF] h-1 bg-white/10 rounded-full appearance-none" />
-              </div>
-
-              <button onClick={() => setHudEnabled(!hudEnabled)} className="flex justify-between items-center bg-white/5 hover:bg-white/10 transition-colors p-2 rounded text-white text-[10px] font-mono uppercase tracking-widest border border-white/5">
-                <div className="flex gap-2 items-center">
-                  <Eye className="w-3 h-3 text-white" />
-                  <span>HUD</span>
-                </div>
-              </button>
-
-              <div className="flex justify-between items-center bg-white/5 p-2 rounded text-white text-[10px] font-mono uppercase tracking-widest border border-white/5">
-                <span className="text-white/50">Layout</span>
-                <span className="text-white bg-white/10 px-2 py-0.5 rounded">Tactical</span>
-              </div>
-
-              <div className="bg-green-500/10 p-2 rounded border border-green-500/30 flex flex-col gap-2">
-                <button onClick={() => setPanoptic(!panoptic)} className="flex justify-between items-center text-[10px] font-mono text-green-400">
-                  <div className="flex gap-2 items-center">
-                    <div className={`w-2 h-2 rounded-sm ${panoptic ? 'bg-green-400 shadow-[0_0_8px_#4ade80]' : 'bg-transparent border border-green-400'}`} />
-                    <span className="font-bold tracking-widest">Panoptic</span>
-                  </div>
-                </button>
-                <div className="flex justify-between items-center text-[9px] text-green-400/50 font-mono tracking-widest uppercase">
-                  <span>Density</span>
-                  <span>{density}%</span>
-                </div>
-                <input type="range" min="1" max="100" value={density} onChange={(e) => setDensity(Number(e.target.value))} className="w-full accent-green-400 h-1 bg-green-900/50 rounded-full appearance-none" />
-              </div>
-
-              <button onClick={() => { setHudEnabled(false); setSelectedFlight(null); }} className="w-full text-center bg-transparent border border-white/5 hover:border-white/20 transition-colors p-2 rounded text-white/50 hover:text-white text-[10px] font-mono uppercase tracking-widest mt-1">
-                Clean UI
-              </button>
-
-            </div>
-          )}
-
           {/* Clean UI Restore Button */}
-          {!hudEnabled && (
+          {!hud && (
             <button
-              onClick={() => setHudEnabled(true)}
+              onClick={() => onRestoreHud && onRestoreHud()}
               className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-auto z-[100] bg-black/80 backdrop-blur-md p-3 rounded-full border border-white/10 hover:border-white/30 text-white/50 hover:text-white transition-all shadow-[0_0_20px_rgba(0,0,0,0.8)]"
             >
               <EyeOff className="w-5 h-5" />
@@ -662,15 +611,6 @@ export function FlightMap() {
                 </div>
               </div>
 
-              {/* Export */}
-              <div className="mt-4 border border-white/10 rounded-lg p-4 bg-white/[0.02]">
-                <p className="text-[10px] text-white/60 font-body mb-3">
-                  Live data telemetry automatically refreshes.
-                </p>
-                <button className="w-full bg-white/10 hover:bg-white/20 transition-colors py-2 rounded text-[10px] font-mono uppercase tracking-widest text-white border border-white/10">
-                  Export KML Trajectory
-                </button>
-              </div>
             </div>
           </div>
         )}

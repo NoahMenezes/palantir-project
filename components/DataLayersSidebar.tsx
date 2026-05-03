@@ -15,12 +15,24 @@ const LAYERS = [
   { id: "bikeshare", icon: Bike, name: "Bikeshare", source: "GBFS", time: "never", count: "-", iconColor: "text-purple-400" },
 ];
 
-export function DataLayersSidebar() {
+interface DataLayersSidebarProps {
+  flightCount?: number;
+}
+
+export function DataLayersSidebar({ flightCount }: DataLayersSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({});
 
   const toggleLayer = (id: string) => {
     setActiveLayers(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const getCountDisplay = (layerId: string, hardcodedCount: string) => {
+    if (layerId === "flights" && flightCount !== undefined) {
+      if (flightCount >= 1000) return `${(flightCount / 1000).toFixed(1)}K`;
+      return flightCount.toString();
+    }
+    return hardcodedCount;
   };
 
   return (
@@ -67,7 +79,9 @@ export function DataLayersSidebar() {
                   
                   {/* Count & Toggle */}
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs font-mono text-white/50 w-8 text-right">{layer.count}</span>
+                    <span className="text-xs font-mono text-white/50 w-8 text-right">
+                      {getCountDisplay(layer.id, layer.count)}
+                    </span>
                     <button 
                       onClick={() => toggleLayer(layer.id)}
                       className={`px-3 py-1 text-[10px] font-bold tracking-wider rounded transition-all duration-300 border ${
