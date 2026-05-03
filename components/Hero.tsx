@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { ArrowUpRight, Play } from "lucide-react";
 import { BlurText } from "./BlurText";
-import { Globe3D, GlobeMarker } from "@/components/ui/3d-globe";
+import { Globe3D } from "@/components/ui/3d-globe";
 
 export function Hero() {
   return (

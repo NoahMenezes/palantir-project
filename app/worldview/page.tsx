@@ -5,7 +5,7 @@ import { FlightMap } from "@/components/FlightMap";
 import { Navbar } from "@/components/Navbar";
 import { TacticalSidebar } from "@/components/TacticalSidebar";
 import { WeatherLayerType } from "@/components/WeatherControls";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 export default function WorldviewPage() {
   const [flightCount, setFlightCount] = useState<number>(0);
@@ -28,15 +28,15 @@ export default function WorldviewPage() {
   const [availableTimes, setAvailableTimes] = useState<number[]>([]);
   const [weatherHost, setWeatherHost] = useState<string>("https://tilecache.rainviewer.com");
 
-  const refreshWeather = () => {
+  const refreshWeather = useCallback(() => {
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then(res => res.json())
       .then(data => {
         if (data && data.radar && data.radar.past) {
           setWeatherHost(data.host || "https://tilecache.rainviewer.com");
           const times = [
-            ...data.radar.past.map((t: any) => t.time),
-            ...data.radar.nowcast.map((t: any) => t.time)
+            ...data.radar.past.map((t: { time: number }) => t.time),
+            ...data.radar.nowcast.map((t: { time: number }) => t.time)
           ];
           setAvailableTimes(times);
           if (times.length > 0 && weatherTime === 0) {
@@ -45,13 +45,13 @@ export default function WorldviewPage() {
         }
       })
       .catch(err => console.error("Failed to fetch weather times:", err));
-  };
+  }, [weatherTime]);
 
   useEffect(() => {
     refreshWeather();
     const interval = setInterval(refreshWeather, 300000); // Refresh every 5 mins
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshWeather]);
 
   // Tactical States
   const [bloom, setBloom] = useState(136);

@@ -113,7 +113,7 @@ function latLngToVector3(
 interface MarkerProps {
   marker: GlobeMarker;
   radius: number;
-  defaultSize: number;
+
   onClick?: (marker: GlobeMarker) => void;
   onHover?: (marker: GlobeMarker | null) => void;
 }
@@ -121,7 +121,6 @@ interface MarkerProps {
 function Marker({
   marker,
   radius,
-  defaultSize,
   onClick,
   onHover,
 }: MarkerProps) {
@@ -267,21 +266,26 @@ function RotatingGlobe({
   const groupRef = useRef<THREE.Group>(null);
 
   // Load Earth textures
-  const [earthTexture, bumpTexture] = useTexture([
+  const [earthTextureRaw, bumpTextureRaw] = useTexture([
     config.textureUrl,
     config.bumpMapUrl,
   ]);
 
-  // Configure textures
-  useMemo(() => {
-    if (earthTexture) {
-      earthTexture.colorSpace = THREE.SRGBColorSpace;
-      earthTexture.anisotropy = 16;
-    }
-    if (bumpTexture) {
-      bumpTexture.anisotropy = 8;
-    }
-  }, [earthTexture, bumpTexture]);
+  // Configure textures via memoized clones to satisfy React 19 immutability rules
+  const earthTexture = React.useMemo(() => {
+    if (!earthTextureRaw) return null;
+    const t = earthTextureRaw.clone();
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 16;
+    return t;
+  }, [earthTextureRaw]);
+
+  const bumpTexture = React.useMemo(() => {
+    if (!bumpTextureRaw) return null;
+    const t = bumpTextureRaw.clone();
+    t.anisotropy = 8;
+    return t;
+  }, [bumpTextureRaw]);
 
   // Create geometries
   const geometry = useMemo(() => {
@@ -323,7 +327,6 @@ function RotatingGlobe({
           key={`marker-${index}-${marker.lat}-${marker.lng}`}
           marker={marker}
           radius={config.radius}
-          defaultSize={config.markerSize}
           onClick={onMarkerClick}
           onHover={onMarkerHover}
         />

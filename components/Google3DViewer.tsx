@@ -33,13 +33,13 @@ export function Google3DViewer() {
             'X-GOOG-API-KEY': GOOGLE_API_KEY
           }
         }
-      },
-      onTileLoad: (tileHeader) => {
-        // Optional logging for successful load
       }
     });
 
-    setLayers([tile3DLayer]);
+    const tid = setTimeout(() => {
+      setLayers([tile3DLayer]);
+    }, 0);
+    return () => clearTimeout(tid);
   }, []);
 
   if (!GOOGLE_API_KEY) {

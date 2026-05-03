@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { 
   ChevronUp, ChevronDown, Play, Pause, SkipForward, Satellite, Radar, 
   CloudRain, Wind, Thermometer, Droplets, Gauge, Info, Search, Maximize, 
-  Settings, X, Sun, Cloud, Droplet
+  Settings, X, Sun, Cloud
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -22,7 +22,7 @@ export function WeatherControls({ activeWeatherLayer, setActiveWeatherLayer, wea
   const [menuOpen, setMenuOpen] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const OPTIONS: { id: WeatherLayerType; icon: any; label: string }[] = [
+  const OPTIONS: { id: WeatherLayerType; icon: React.ComponentType<any>; label: string }[] = [
     { id: "satellite", icon: Satellite, label: "Satellite" },
     { id: "radar", icon: Radar, label: "Radar" },
     { id: "precipitation", icon: CloudRain, label: "Precipitation" },
@@ -47,7 +47,7 @@ export function WeatherControls({ activeWeatherLayer, setActiveWeatherLayer, wea
     return () => clearInterval(interval);
   }, [isPlaying, availableTimes, setWeatherTime]);
 
-  const handleTimeChange = (direction: 'up' | 'down', unit: 'day' | 'time') => {
+  const handleTimeChange = (direction: 'up' | 'down', _unit: 'day' | 'time') => {
     if (availableTimes.length === 0) return;
     const currentIndex = availableTimes.indexOf(weatherTime);
     let nextIndex = currentIndex;
@@ -136,7 +136,7 @@ export function WeatherControls({ activeWeatherLayer, setActiveWeatherLayer, wea
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <div className="flex items-center gap-2">
               <Sun className="w-4 h-4 text-[#FFD700]" />
-              <span className="text-sm font-bold tracking-tight">15° 11' N, 73° 23' E</span>
+              <span className="text-sm font-bold tracking-tight">15&deg; 11&apos; N, 73&deg; 23&apos; E</span>
             </div>
             <X className="w-4 h-4 text-white/20 cursor-pointer hover:text-white/60 transition-colors" />
           </div>

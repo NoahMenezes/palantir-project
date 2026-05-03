@@ -1,0 +1,274 @@
+$ eslint
+
+/home/noah/Desktop/NextJS/palantir-project/app/api/flight-route/route.ts
+  29:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/noah/Desktop/NextJS/palantir-project/app/api/flights/route.ts
+  6:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/noah/Desktop/NextJS/palantir-project/app/api/military/route.ts
+   3:20  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  68:12  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/noah/Desktop/NextJS/palantir-project/app/flights/page.tsx
+   90:5  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/app/flights/page.tsx:90:5
+  88 |
+  89 |   useEffect(() => {
+> 90 |     fetchFlights();
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  91 |     const interval = setInterval(fetchFlights, 10000);
+  92 |     return () => clearInterval(interval);
+  93 |   }, [fetchFlights]);                react-hooks/set-state-in-effect
+  106:7  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/app/flights/page.tsx:106:7
+  104 |         }).catch(err => console.error(err));
+  105 |     } else {
+> 106 |       setFlightRoute(null);
+      |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  107 |     }
+  108 |     return () => { isMounted = false; };
+  109 |   }, [selectedFlight?.id]);  react-hooks/set-state-in-effect
+  109:6  warning  React Hook useEffect has a missing dependency: 'selectedFlight'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
+
+/home/noah/Desktop/NextJS/palantir-project/app/satellites/page.tsx
+   32:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/app/satellites/page.tsx:32:5
+  30 |
+  31 |   useEffect(() => {
+> 32 |     setTimeTick(Date.now());
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  33 |   }, []);
+  34 |
+  35 |   const fetchSatellites = React.useCallback(async () => {  react-hooks/set-state-in-effect
+   63:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/app/satellites/page.tsx:63:5
+  61 |
+  62 |   useEffect(() => {
+> 63 |     fetchSatellites();
+     |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  64 |   }, [fetchSatellites]);
+  65 |
+  66 |   useEffect(() => {                           react-hooks/set-state-in-effect
+   85:41  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/noah/Desktop/NextJS/palantir-project/app/satellites/page.tsx:85:41
+  83 |     if (!sat || !sat.satrec) return null;
+  84 |     try {
+> 85 |       const date = new Date(timeTick || Date.now());
+     |                                         ^^^^^^^^^^ Cannot call impure function
+  86 |       const positionAndVelocity = satellite.propagate(sat.satrec, date);
+  87 |       if (positionAndVelocity.position && typeof positionAndVelocity.position !== "boolean" && positionAndVelocity.velocity && typeof positionAndVelocity.velocity !== "boolean") {
+  88 |         const gmst = satellite.gstime(date);                                                                           react-hooks/purity
+  110:89  warning  React Hook React.useMemo has a missing dependency: 'getSatData'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+
+/home/noah/Desktop/NextJS/palantir-project/app/worldview/page.tsx
+  38:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightGlobe.tsx
+  20:70  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  31:19  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  39:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightGlobe.tsx:39:5
+  37 |
+  38 |   useEffect(() => {
+> 39 |     fetchFlights();
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  40 |     // Poll every 10 seconds for real-time updates
+  41 |     const interval = setInterval(fetchFlights, 10000);
+  42 |     return () => clearInterval(interval);  react-hooks/set-state-in-effect
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightMap.tsx
+  206:56  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  207:50  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  213:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightMap.tsx:213:5
+  211 |
+  212 |   useEffect(() => {
+> 213 |     setTimeTick(Date.now());
+      |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  214 |   }, []);
+  215 |
+  216 |   // Controlling the viewState manually allows us to fix the zoom buttons and the "slipping" bug simultaneously                                                                                                                 react-hooks/set-state-in-effect
+  268:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  280:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightMap.tsx:280:7
+  278 |   useEffect(() => {
+  279 |     if (activeLayers.flights) {
+> 280 |       fetchFlights();
+      |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  281 |       // Refresh flights every 15 seconds to create real-time movement and avoid strict API rate limits
+  282 |       const interval = setInterval(fetchFlights, 15000);
+  283 |       return () => clearInterval(interval);  react-hooks/set-state-in-effect
+  288:6   warning  React Hook useEffect has missing dependencies: 'fetchFlights' and 'onFlightsUpdate'. Either include them or remove the dependency array. If 'onFlightsUpdate' changes too often, find the parent component that defines it and wrap that definition in useCallback                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
+  301:20  warning  'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  313:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightMap.tsx:313:7
+  311 |   useEffect(() => {
+  312 |     if (activeLayers.satellites) {
+> 313 |       fetchSatellites();
+      |       ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  314 |       // Satellite TLEs rarely change, re-fetch every 1 hour is fine
+  315 |       const interval = setInterval(fetchSatellites, 3600000);
+  316 |       return () => clearInterval(interval);                       react-hooks/set-state-in-effect
+  321:6   warning  React Hook useEffect has missing dependencies: 'fetchSatellites' and 'onSatellitesUpdate'. Either include them or remove the dependency array. If 'onSatellitesUpdate' changes too often, find the parent component that defines it and wrap that definition in useCallback                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/exhaustive-deps
+  353:76  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  361:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightMap.tsx:361:7
+  359 |         }
+  360 |       }
+> 361 |       setFlightRoute({ points });
+      |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  362 |     } else if (
+  363 |       selectedFlight &&
+  364 |       !selectedFlight.isSatellite &&                                                                                                                                                      react-hooks/set-state-in-effect
+  380:6   warning  React Hook useEffect has a missing dependency: 'selectedFlight'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  389:63  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  405:17  warning  'd' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  413:24  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  439:17  warning  'd' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  440:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  441:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  463:17  warning  'd' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  470:24  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  477:88  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  484:17  warning  'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  487:17  warning  'd' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  488:18  warning  'd' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  488:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  507:20  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  524:41  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  588:37  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  589:67  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  846:54  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/noah/Desktop/NextJS/palantir-project/components/FlightMap.tsx:846:54
+  844 |                     <p className="text-sm font-mono text-white">
+  845 |                       {selectedFlight.last_contact
+> 846 |                         ? `${Math.floor((timeTick || Date.now()) / 1000 - selectedFlight.last_contact)}s ago`
+      |                                                      ^^^^^^^^^^ Cannot call impure function
+  847 |                         : "N/A"}
+  848 |                     </p>
+  849 |                   </div>                                                                                                                                                                                                                                                                                                                                 react-hooks/purity
+
+/home/noah/Desktop/NextJS/palantir-project/components/Google3DViewer.tsx
+  21:40  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
+  39:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/noah/Desktop/NextJS/palantir-project/components/Google3DViewer.tsx:39:5
+  37 |     });
+  38 |
+> 39 |     setLayers([tile3DLayer]);
+     |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  40 |   }, []);
+  41 |
+  42 |   if (!GOOGLE_API_KEY) {  react-hooks/set-state-in-effect
+
+/home/noah/Desktop/NextJS/palantir-project/components/WeatherControls.tsx
+  25:68  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:55  warning  '_unit' is defined but never used         @typescript-eslint/no-unused-vars
+
+/home/noah/Desktop/NextJS/palantir-project/components/ui/3d-globe.tsx
+  236:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                         @next/next/no-img-element
+  277:7   error    Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/home/noah/Desktop/NextJS/palantir-project/components/ui/3d-globe.tsx:277:7
+  275 |   React.useEffect(() => {
+  276 |     if (earthTexture) {
+> 277 |       earthTexture.colorSpace = THREE.SRGBColorSpace;
+      |       ^^^^^^^^^^^^ `earthTexture` cannot be modified
+  278 |       earthTexture.anisotropy = 16;
+  279 |     }
+  280 |     if (bumpTexture) {  react-hooks/immutability
+  281:7   error    Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/home/noah/Desktop/NextJS/palantir-project/components/ui/3d-globe.tsx:281:7
+  279 |     }
+  280 |     if (bumpTexture) {
+> 281 |       bumpTexture.anisotropy = 8;
+      |       ^^^^^^^^^^^ `bumpTexture` cannot be modified
+  282 |     }
+  283 |   }, [earthTexture, bumpTexture]);
+  284 |                                                                     react-hooks/immutability
+
+✖ 53 problems (38 errors, 15 warnings)
+
+error: script "lint" exited with code 1

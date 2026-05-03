@@ -1,8 +1,6 @@
 "use client";
 
-import { Play, Sparkles, Search, Eye, EyeOff, Layout, Square, ChevronDown } from "lucide-react";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { Play, Sparkles, Search, Eye, EyeOff, ChevronDown } from "lucide-react";
 
 interface TacticalSidebarProps {
   bloom: number;

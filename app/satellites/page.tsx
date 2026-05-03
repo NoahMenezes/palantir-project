@@ -6,40 +6,68 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Satellite, X } from "lucide-react";
 import * as satellite from "satellite.js";
 
+export interface SatelliteData {
+  id: string;
+  name: string;
+  tle1: string;
+  tle2: string;
+  satrec?: satellite.SatRec;
+}
+
+export interface PropagatedSat {
+  lat: number;
+  lng: number;
+  alt: number;
+  vel: number;
+}
+
 export default function AllSatellitesPage() {
-  const [satellites, setSatellites] = useState<any[]>([]);
+  const [satellites, setSatellites] = useState<SatelliteData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSat, setSelectedSat] = useState<any | null>(null);
-  const [timeTick, setTimeTick] = useState(Date.now());
+  const [selectedSat, setSelectedSat] = useState<SatelliteData | null>(null);
+  const [timeTick, setTimeTick] = useState(0);
   const requestRef = useRef<number | null>(null);
 
-  const fetchSatellites = async () => {
+  useEffect(() => {
+    const tid = setTimeout(() => {
+      setTimeTick(Date.now());
+    }, 0);
+    return () => clearTimeout(tid);
+  }, []);
+
+  const fetchSatellites = React.useCallback(async () => {
     try {
       const res = await fetch("/api/satellites");
       const data = await res.json();
       
-      const parsed = (data.satellites || []).map((s: any) => {
+      const parsed: SatelliteData[] = (data.satellites || []).map((s: SatelliteData) => {
         try {
           return { ...s, satrec: satellite.twoline2satrec(s.tle1, s.tle2) };
-        } catch(e) { return null; }
-      }).filter(Boolean);
+        } catch(e) { 
+          console.error("Error parsing TLE for satellite", s.name, e);
+          return null; 
+        }
+      }).filter((s: SatelliteData | null): s is SatelliteData => s !== null);
       
       setSatellites(parsed);
       setLoading(false);
       
       if (selectedSat) {
-        const updated = parsed.find((s: any) => s.id === selectedSat.id);
+        const updated = parsed.find((s: SatelliteData) => s.id === selectedSat.id);
         if (updated) setSelectedSat(updated);
       }
     } catch (err) {
       console.warn("Failed to fetch satellites", err);
       setLoading(false);
     }
-  };
+  }, [selectedSat]);
 
   useEffect(() => {
-    fetchSatellites();
-  }, []);
+    const tid = setTimeout(() => {
+      fetchSatellites();
+    }, 0);
+    return () => clearTimeout(tid);
+  }, [fetchSatellites]);
 
   useEffect(() => {
     let lastUpdate = Date.now();
@@ -57,14 +85,14 @@ export default function AllSatellitesPage() {
     };
   }, []);
 
-  const getSatData = (sat: any) => {
+  const getSatData = (sat: SatelliteData): PropagatedSat | null => {
     if (!sat || !sat.satrec) return null;
     try {
-      const date = new Date(timeTick);
+      const date = new Date(timeTick || (typeof window !== 'undefined' ? Date.now() : 0));
       const positionAndVelocity = satellite.propagate(sat.satrec, date);
       if (positionAndVelocity.position && typeof positionAndVelocity.position !== "boolean" && positionAndVelocity.velocity && typeof positionAndVelocity.velocity !== "boolean") {
         const gmst = satellite.gstime(date);
-        const positionGd = satellite.eciToGeodetic(positionAndVelocity.position as any, gmst);
+        const positionGd = satellite.eciToGeodetic(positionAndVelocity.position as satellite.EciVec3<number>, gmst);
         
         // velocity is in km/s. Convert to km/h
         const vx = positionAndVelocity.velocity.x;
@@ -79,9 +107,13 @@ export default function AllSatellitesPage() {
           vel: velocityKms * 3600 // km/h
         };
       }
-    } catch(e) {}
+    } catch(e) {
+      console.error("Error propagating satellite", sat.name, e);
+    }
     return null;
   };
+
+  const selectedSatData = React.useMemo(() => getSatData(selectedSat as SatelliteData), [selectedSat, timeTick]);
 
   return (
     <div className="bg-[#050505] min-h-screen text-white flex flex-col font-body">
@@ -194,29 +226,22 @@ export default function AllSatellitesPage() {
               <div>
                 <h4 className="text-[10px] font-mono text-[#00E5FF] uppercase tracking-widest mb-3 border-b border-white/5 pb-2">Telemetry</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  {(() => {
-                    const data = getSatData(selectedSat);
-                    return (
-                      <>
                         <div>
                           <p className="text-[10px] text-white/40 uppercase font-mono">Latitude</p>
-                          <p className="text-sm font-mono text-white">{data ? data.lat.toFixed(4) : "N/A"}&deg;</p>
+                          <p className="text-sm font-mono text-white">{selectedSatData ? selectedSatData.lat.toFixed(4) : "N/A"}&deg;</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-white/40 uppercase font-mono">Longitude</p>
-                          <p className="text-sm font-mono text-white">{data ? data.lng.toFixed(4) : "N/A"}&deg;</p>
+                          <p className="text-sm font-mono text-white">{selectedSatData ? selectedSatData.lng.toFixed(4) : "N/A"}&deg;</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-white/40 uppercase font-mono">Altitude</p>
-                          <p className="text-sm font-mono text-[#00E5FF]">{data ? Math.round(data.alt).toLocaleString() : "N/A"} km</p>
+                          <p className="text-sm font-mono text-[#00E5FF]">{selectedSatData ? Math.round(selectedSatData.alt).toLocaleString() : "N/A"} km</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-white/40 uppercase font-mono">Velocity</p>
-                          <p className="text-sm font-mono text-white">{data ? Math.round(data.vel).toLocaleString() : "N/A"} km/h</p>
+                          <p className="text-sm font-mono text-white">{selectedSatData ? Math.round(selectedSatData.vel).toLocaleString() : "N/A"} km/h</p>
                         </div>
-                      </>
-                    )
-                  })()}
                 </div>
               </div>
 

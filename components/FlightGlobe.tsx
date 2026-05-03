@@ -4,11 +4,13 @@ import React, { useEffect, useState } from "react";
 import { Globe3D, GlobeMarker } from "@/components/ui/3d-globe";
 
 export function FlightGlobe() {
-  const [markers, setMarkers] = useState<GlobeMarker[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchFlights = async () => {
+  const [flights, setFlights] = useState<any[]>([]);
+
+  const fetchFlights = React.useCallback(async () => {
     try {
       const res = await fetch("/api/flights");
       if (!res.ok) throw new Error("Failed to fetch flight data");
@@ -16,16 +18,8 @@ export function FlightGlobe() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // Convert flight data to GlobeMarker format compatible with Globe3D
-      const flightMarkers: GlobeMarker[] = data.flights.map((flight: any) => ({
-        lat: flight.lat,
-        lng: flight.lng,
-        // We use a small orange dot as a plane marker
-        src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2Y5NzMxNiI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiLz48L3N2Zz4=", 
-        label: `${flight.callsign} (${flight.country})`,
-      }));
-
-      setMarkers(flightMarkers);
+      const flightsData = (data.flights || []);
+      setFlights(flightsData);
       setLoading(false);
       setError(null);
     } catch (err: any) {
@@ -33,14 +27,27 @@ export function FlightGlobe() {
       setError(err.message);
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchFlights();
+    const tid = setTimeout(() => {
+      fetchFlights();
+    }, 0);
     // Poll every 10 seconds for real-time updates
     const interval = setInterval(fetchFlights, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearTimeout(tid);
+      clearInterval(interval);
+    };
+  }, [fetchFlights]);
+
+  const markers: GlobeMarker[] = flights.map((flight) => ({
+    lat: flight.lat,
+    lng: flight.lng,
+    // We use a small orange dot as a plane marker
+    src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2Y5NzMxNiI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiLz48L3N2Zz4=", 
+    label: `${flight.callsign} (${flight.country})`,
+  }));
 
   return (
     <div className="w-full h-full relative group rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,229,255,0.05)] bg-[#0A0A0C]/50 backdrop-blur-sm">

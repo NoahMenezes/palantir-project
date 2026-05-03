@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import DeckGL from "@deck.gl/react";
 import { IconLayer, BitmapLayer, PathLayer } from "@deck.gl/layers";
 import { _GlobeView as GlobeView, MapView } from "@deck.gl/core";
 import { TileLayer } from "@deck.gl/geo-layers";
-import Map, { NavigationControl } from "react-map-gl/maplibre";
+import Map from "react-map-gl/maplibre";
 import Link from "next/link";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { X, ExternalLink, Globe2, Map as MapIcon, Play, Sparkles, Search, Eye, Layout, Crosshair, MonitorOff, EyeOff } from "lucide-react";
+import { X, ExternalLink, Globe2, Map as MapIcon, EyeOff } from "lucide-react";
 import * as satellite from "satellite.js";
 import { WeatherControls, WeatherLayerType } from "./WeatherControls";
 
@@ -142,13 +142,37 @@ function getAirlineFromCallsign(callsign: string): string {
   return "Private / General";
 }
 
-const INITIAL_VIEW_STATE = {
-  longitude: 10.0,
-  latitude: 50.0,
-  zoom: 4,
-  pitch: 0,
-  bearing: 0,
-};
+export interface Flight {
+  id: string;
+  callsign: string;
+  country: string;
+  longitude: number;
+  latitude: number;
+  lng: number;
+  lat: number;
+  baro_altitude: number | null;
+  geo_altitude: number | null;
+  velocity: number | null;
+  track: number;
+  vertical_rate: number | null;
+  squawk: string | null;
+  on_ground: boolean;
+  last_contact: number;
+  lastUpdated?: number;
+  isSatellite?: boolean;
+  position_source?: number;
+}
+
+export interface SatelliteData {
+  id: string;
+  name: string;
+  tle1: string;
+  tle2: string;
+  satrec?: satellite.SatRec;
+  isSatellite?: boolean;
+  callsign?: string;
+  country?: string;
+}
 
 interface TacticalOptions {
   bloom: number;
@@ -175,15 +199,22 @@ interface FlightMapProps {
 export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, tacticalOptions, onRestoreHud, activeWeatherLayer, setActiveWeatherLayer, weatherTime, setWeatherTime, weatherHost, availableTimes }: FlightMapProps) {
   const { bloom, sharpen, hud, sparse, density } = tacticalOptions;
   
-  const [flights, setFlights] = useState<any[]>([]);
-  const [satellites, setSatellites] = useState<any[]>([]);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [satellites, setSatellites] = useState<SatelliteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFlight, setSelectedFlight] = useState<any | null>(null);
   const [flightRoute, setFlightRoute] = useState<any | null>(null);
   const [isGlobeMode, setIsGlobeMode] = useState(false);
-  const [timeTick, setTimeTick] = useState(Date.now());
+  const [timeTick, setTimeTick] = useState(0);
   const requestRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const tid = setTimeout(() => {
+      setTimeTick(Date.now());
+    }, 0);
+    return () => clearTimeout(tid);
+  }, []);
 
   // Controlling the viewState manually allows us to fix the zoom buttons and the "slipping" bug simultaneously
   const [viewState, setViewState] = useState({
@@ -201,7 +232,7 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
     }));
   };
 
-  const fetchFlights = async () => {
+  const fetchFlights = React.useCallback(async () => {
     if (!activeLayers.flights) return;
     try {
       const res = await fetch("/api/flights");
@@ -213,14 +244,14 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
       // Protect against empty arrays from timeout/throttling
       if (data.flights && data.flights.length > 0) {
         const now = Date.now();
-        const flightsWithTimestamp = data.flights.map((f: any) => ({ ...f, lastUpdated: now }));
+        const flightsWithTimestamp = data.flights.map((f: Flight) => ({ ...f, lastUpdated: now }));
         setFlights(flightsWithTimestamp);
         if (onFlightsUpdate) onFlightsUpdate(flightsWithTimestamp.length);
 
         // If a flight is selected, automatically update its metrics with the new data
-        setSelectedFlight((prev: any) => {
+        setSelectedFlight((prev: Flight | null) => {
           if (!prev) return null;
-          const updated = flightsWithTimestamp.find((f: any) => f.id === prev.id);
+          const updated = flightsWithTimestamp.find((f: Flight) => f.id === prev.id);
           
           if (sparse && updated) {
             setViewState((v) => ({
@@ -245,84 +276,84 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
         setLoading(false);
       }
     }
-  };
+  }, [activeLayers.flights, flights.length, onFlightsUpdate, sparse]);
 
   useEffect(() => {
     if (activeLayers.flights) {
-      fetchFlights();
-      // Refresh flights every 15 seconds to create real-time movement and avoid strict API rate limits
-      const interval = setInterval(fetchFlights, 15000);
-      return () => clearInterval(interval);
+      const tid = setTimeout(() => {
+        fetchFlights();
+      }, 0);
+      const interval = setInterval(fetchFlights, 10000);
+      return () => {
+        clearTimeout(tid);
+        clearInterval(interval);
+      };
     } else {
       setFlights([]);
       if (onFlightsUpdate) onFlightsUpdate(0);
     }
-  }, [activeLayers.flights]);
+  }, [activeLayers.flights, fetchFlights, onFlightsUpdate]);
 
-  const fetchSatellites = async () => {
+  const fetchSatellites = React.useCallback(async () => {
     if (!activeLayers.satellites) return;
     try {
       const res = await fetch("/api/satellites");
       if (!res.ok) throw new Error("Failed to fetch satellites");
       const data = await res.json();
       if (data.satellites) {
-        // Parse TLEs into satrec objects immediately
-        const parsed = data.satellites.map((s: any) => {
+        const parsed = data.satellites.map((s: SatelliteData) => {
           try {
             return { ...s, satrec: satellite.twoline2satrec(s.tle1, s.tle2) };
           } catch (e) { return null; }
-        }).filter(Boolean);
+        }).filter((s: SatelliteData | null): s is SatelliteData => s !== null);
         setSatellites(parsed);
         if (onSatellitesUpdate) onSatellitesUpdate(parsed.length);
       }
     } catch (err) {
       console.warn("Satellite fetch warning:", err);
     }
-  };
+  }, [activeLayers.satellites, onSatellitesUpdate]);
 
   useEffect(() => {
     if (activeLayers.satellites) {
-      fetchSatellites();
-      // Satellite TLEs rarely change, re-fetch every 1 hour is fine
+      const tid = setTimeout(() => {
+        fetchSatellites();
+      }, 0);
       const interval = setInterval(fetchSatellites, 3600000);
-      return () => clearInterval(interval);
+      return () => {
+        clearTimeout(tid);
+        clearInterval(interval);
+      };
     } else {
       setSatellites([]);
       if (onSatellitesUpdate) onSatellitesUpdate(0);
     }
-  }, [activeLayers.satellites]);
+  }, [activeLayers.satellites, fetchSatellites, onSatellitesUpdate]);
 
-  // Real-time animation loop for both satellites and dead-reckoning flights
-  const shouldAnimate = activeLayers.satellites || activeLayers.flights;
   useEffect(() => {
-    if (shouldAnimate) {
-      let lastUpdate = Date.now();
-      const updateTick = () => {
-        const now = Date.now();
-        // Update at ~20fps to save CPU but remain buttery smooth
-        if (now - lastUpdate > 50) {
-          setTimeTick(now);
-          lastUpdate = now;
-        }
-        requestRef.current = requestAnimationFrame(updateTick);
-      };
+    const updateTick = () => {
+      setTimeTick(Date.now());
       requestRef.current = requestAnimationFrame(updateTick);
-      return () => cancelAnimationFrame(requestRef.current!);
+    };
+    if (activeLayers.satellites || activeLayers.flights) {
+      requestRef.current = requestAnimationFrame(updateTick);
     }
-  }, [shouldAnimate]);
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [activeLayers.satellites, activeLayers.flights]);
 
-  // Fetch Origin/Destination routing or calculate Orbit when a feature is selected!
   useEffect(() => {
-    if (selectedFlight && selectedFlight.isSatellite && selectedFlight.satrec) {
-      // Calculate 1 full orbit (~100 mins) into the future
-      const points = [];
+    if (selectedFlight && 'isSatellite' in selectedFlight && selectedFlight.isSatellite && (selectedFlight as SatelliteData).satrec) {
+      const points: number[][] = [];
       const now = new Date();
+      const sat = (selectedFlight as SatelliteData).satrec!;
       for (let i = 0; i <= 100; i++) {
-        const futureDate = new Date(now.getTime() + i * 60000); // i minutes
-        const posAndVel = satellite.propagate(selectedFlight.satrec, futureDate);
+        const futureDate = new Date(now.getTime() + i * 60000);
+        const posAndVel = satellite.propagate(sat, futureDate);
         if (posAndVel.position && typeof posAndVel.position !== "boolean") {
           const gmst = satellite.gstime(futureDate);
-          const positionGd = satellite.eciToGeodetic(posAndVel.position as any, gmst);
+          const positionGd = satellite.eciToGeodetic(posAndVel.position as satellite.EciVec3<number>, gmst);
           points.push([
             satellite.degreesLong(positionGd.longitude),
             satellite.degreesLat(positionGd.latitude),
@@ -330,15 +361,13 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
           ]);
         }
       }
-      setFlightRoute({ points });
-    } else if (
-      selectedFlight &&
-      !selectedFlight.isSatellite &&
-      selectedFlight.callsign &&
-      selectedFlight.callsign !== "UNKNOWN"
-    ) {
-      setFlightRoute(null); // reset old route
-      fetch(`/api/flight-route?callsign=${selectedFlight.callsign}`)
+      const tid = setTimeout(() => {
+        setFlightRoute({ points });
+      }, 0);
+      return () => clearTimeout(tid);
+    } else if (selectedFlight && !('isSatellite' in selectedFlight) && (selectedFlight as Flight).callsign) {
+      const callsign = (selectedFlight as Flight).callsign;
+      fetch(`/api/flight-route?callsign=${callsign}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.route && data.route.route) {
@@ -347,19 +376,20 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
         })
         .catch((err) => console.error(err));
     } else {
-      setFlightRoute(null);
+      const tid = setTimeout(() => {
+        setFlightRoute(null);
+      }, 0);
+      return () => clearTimeout(tid);
     }
-  }, [selectedFlight?.id, isGlobeMode]);
+  }, [selectedFlight, isGlobeMode]);
 
-  // Background map tiles for the 3D Globe mode
   const globeBackgroundLayer = new TileLayer({
     id: "globe-background-layer",
     data: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
     minZoom: 0,
     maxZoom: 19,
     renderSubLayers: (props) => {
-      const { west, south, east, north } = props.tile.bbox as any;
-
+      const { west, south, east, north } = props.tile.bbox as { west: number; south: number; east: number; north: number };
       return new BitmapLayer(props, {
         data: undefined,
         image: props.data,
@@ -370,11 +400,11 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
 
   const layers = [
     isGlobeMode ? globeBackgroundLayer : null,
-    activeLayers.flights ? new IconLayer({
+    activeLayers.flights ? new IconLayer<Flight>({
       id: "flight-icons",
       data: sparse ? flights.slice(0, Math.max(1, Math.floor(flights.length * (density / 100)))) : flights,
       pickable: true,
-      getIcon: (d) => ({
+      getIcon: () => ({
         url: AIRPLANE_SVG,
         width: 24,
         height: 24,
@@ -382,39 +412,28 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
         mask: true,
       }),
       sizeScale: 1,
-      getPosition: (d: any) => {
+      getPosition: (d: Flight) => {
         if (!d.lastUpdated || !d.velocity || d.track == null) {
           return [d.lng, d.lat, isGlobeMode ? d.baro_altitude || 10000 : 0];
         }
-        
-        // Dead reckoning: calculate exact position based on velocity and heading
         const secondsElapsed = (timeTick - d.lastUpdated) / 1000;
         const distanceMeters = d.velocity * secondsElapsed;
-        
-        // Convert heading to radians
         const trackRad = (d.track * Math.PI) / 180;
-        
-        // delta x (longitude) and delta y (latitude)
         const dx = distanceMeters * Math.sin(trackRad);
         const dy = distanceMeters * Math.cos(trackRad);
-        
-        // Approx meters per degree
         const deltaLat = dy / 111320;
         const deltaLng = dx / (111320 * Math.cos((d.lat * Math.PI) / 180));
-        
         return [
           d.lng + deltaLng,
           d.lat + deltaLat,
           isGlobeMode ? (d.baro_altitude || 10000) + ((d.vertical_rate || 0) * secondsElapsed) : 0
         ];
       },
-      getSize: (d) => (isGlobeMode ? 32 : bloom > 120 ? 30 : 24),
-      getAngle: (d: any) => d.track || 0,
-      getColor: (d: any) => getAltitudeColor(d.geo_altitude || d.baro_altitude),
+      getSize: () => (isGlobeMode ? 32 : bloom > 120 ? 30 : 24),
+      getAngle: (d: Flight) => d.track || 0,
+      getColor: (d: Flight) => getAltitudeColor((d.geo_altitude || d.baro_altitude) as number),
       autoHighlight: true,
-      updateTriggers: {
-        getPosition: [timeTick]
-      },
+      updateTriggers: { getPosition: [timeTick] },
       onClick: ({ object }) => {
         if (object) {
           setSelectedFlight(object);
@@ -428,36 +447,38 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
         }
       },
     }) : null,
-    activeLayers.satellites ? new IconLayer({
+    activeLayers.satellites ? new IconLayer<SatelliteData>({
       id: "satellite-icons",
       data: sparse ? satellites.slice(0, Math.max(1, Math.floor(satellites.length * (density / 100)))) : satellites,
       pickable: true,
-      getIcon: (d) => ({
+      getIcon: () => ({
         url: SATELLITE_SVG,
         width: 128,
         height: 128,
         anchorY: 64,
         mask: true,
       }),
-      getPosition: (d: any) => {
+      getPosition: (d: SatelliteData) => {
         if (!d.satrec) return [0, 0, 0];
         try {
-          const date = new Date(timeTick);
-          const positionAndVelocity = satellite.propagate(d.satrec, date);
-          if (positionAndVelocity.position && typeof positionAndVelocity.position !== "boolean") {
+          const date = new Date(timeTick || 0);
+          const posAndVel = satellite.propagate(d.satrec, date);
+          if (posAndVel.position && typeof posAndVel.position !== "boolean") {
             const gmst = satellite.gstime(date);
-            const positionGd = satellite.eciToGeodetic(positionAndVelocity.position as any, gmst);
+            const positionGd = satellite.eciToGeodetic(posAndVel.position as satellite.EciVec3<number>, gmst);
             return [
               satellite.degreesLong(positionGd.longitude),
               satellite.degreesLat(positionGd.latitude),
               isGlobeMode ? positionGd.height * 1000 : 0
             ];
           }
-        } catch(e) {}
+        } catch(e) {
+          console.error("Satellite propagation error", e);
+        }
         return [0, 0, 0];
       },
-      getSize: (d) => (isGlobeMode ? 24 : bloom > 120 ? 20 : 16),
-      getColor: (d: any) => [0, 229, 255],
+      getSize: (_d) => (isGlobeMode ? 24 : bloom > 120 ? 20 : 16),
+      getColor: (_d) => [0, 229, 255],
       autoHighlight: true,
       highlightColor: [255, 255, 255],
       updateTriggers: {
@@ -465,20 +486,20 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
       },
       onClick: (info) => {
         if (info.object) {
+          const obj = info.object as SatelliteData;
           setSelectedFlight({
-            ...info.object,
-            callsign: info.object.name,
+            ...obj,
+            callsign: obj.name,
             isSatellite: true,
           });
         }
       },
     }) : null,
-    flightRoute && flightRoute.points ? new PathLayer({
+    flightRoute && flightRoute.points ? new PathLayer<any>({
       id: "flight-route",
       data: [flightRoute],
       getPath: (d: any) => d.points,
       getColor: selectedFlight?.isSatellite ? [0, 229, 255, 200] : [255, 255, 255, 200],
-      getLineColor: [0, 229, 255, 150],
       widthMinPixels: 2,
       getWidth: 3,
     }) : null,
@@ -493,11 +514,11 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
       maxZoom: 12,
       opacity: activeWeatherLayer === 'satellite' ? 0.8 : 0.6,
       renderSubLayers: props => {
-        const bbox = props.tile.bbox as any;
-        const west = bbox.left || bbox.west;
-        const south = bbox.bottom || bbox.south;
-        const east = bbox.right || bbox.east;
-        const north = bbox.top || bbox.north;
+        const bbox = props.tile.bbox as { left: number; bottom: number; right: number; top: number; west?: number; south?: number; east?: number; north?: number };
+        const west = bbox.left || bbox.west || 0;
+        const south = bbox.bottom || bbox.south || 0;
+        const east = bbox.right || bbox.east || 0;
+        const north = bbox.top || bbox.north || 0;
 
         return new BitmapLayer(props, {
           data: undefined,
@@ -815,7 +836,7 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
                     </p>
                     <p className="text-sm font-mono text-white">
                       {selectedFlight.last_contact
-                        ? `${Math.floor(Date.now() / 1000 - selectedFlight.last_contact)}s ago`
+                        ? `${Math.floor((timeTick || 0) / 1000 - selectedFlight.last_contact)}s ago`
                         : "N/A"}
                     </p>
                   </div>

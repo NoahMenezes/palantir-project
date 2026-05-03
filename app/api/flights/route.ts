@@ -3,8 +3,9 @@ import fs from "fs";
 import path from "path";
 
 // Global cache to bypass OpenSky's aggressive rate-limiting returning 0 states
-let globalFlightsCache: any[] | null = null;
-let lastCacheTime = 0;
+let globalFlightsCache: Record<string, string | number | boolean | null>[] | null = null;
+// lastCacheTime is used for debugging/internal tracking, we'll keep it but use it or remove it.
+// I'll remove it to satisfy the lint rule.
 
 // Initialize cache with our fallback to guarantee 0 flights is never rendered on boot
 try {
@@ -14,7 +15,7 @@ try {
     globalFlightsCache = fallbackData.flights;
   }
 } catch (e) {
-  console.warn("Could not load flights fallback data");
+  console.warn("Could not load flights fallback data", e);
 }
 
 export async function GET() {
@@ -55,34 +56,34 @@ export async function GET() {
 
     // Indices: 0: icao24, 1: callsign, 2: origin_country, 5: longitude, 6: latitude, 8: on_ground
     const validFlights = data.states
-      .filter((state: any) => state[5] !== null && state[6] !== null && state[8] === false)
-      .map((state: any) => ({
-        id: state[0],
-        callsign: state[1] ? state[1].trim() : "UNKNOWN",
-        country: state[2],
-        time_position: state[3],
-        last_contact: state[4],
-        lng: state[5],
-        lat: state[6],
-        baro_altitude: state[7],
-        velocity: state[9],
-        track: state[10] || 0,
-        vertical_rate: state[11],
-        geo_altitude: state[13],
-        squawk: state[14],
-        position_source: state[16]
+      .filter((state: (string | number | boolean | null)[]) => state[5] !== null && state[6] !== null && state[8] === false)
+      .map((state: (string | number | boolean | null)[]) => ({
+        id: state[0] as string,
+        callsign: state[1] ? (state[1] as string).trim() : "UNKNOWN",
+        country: state[2] as string,
+        time_position: state[3] as number,
+        last_contact: state[4] as number,
+        lng: state[5] as number,
+        lat: state[6] as number,
+        baro_altitude: state[7] as number,
+        velocity: state[9] as number,
+        track: (state[10] as number) || 0,
+        vertical_rate: state[11] as number,
+        geo_altitude: state[13] as number,
+        squawk: state[14] as string,
+        position_source: state[16] as number
       }));
 
     globalFlightsCache = validFlights;
-    lastCacheTime = Date.now();
 
     return NextResponse.json({ flights: validFlights });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
     if (globalFlightsCache) {
       return NextResponse.json({ flights: globalFlightsCache });
     }
     // Suppress the giant ETIMEDOUT stack traces in the terminal
-    if (error.name === 'AbortError' || error.message?.includes('fetch failed') || error.message?.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
+    if (err.name === 'AbortError' || err.message?.includes('fetch failed') || err.message?.includes('ETIMEDOUT') || err.code === 'ETIMEDOUT') {
       return NextResponse.json({ error: "OpenSky API Timeout" }, { status: 504 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

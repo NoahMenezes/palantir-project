@@ -26,8 +26,9 @@ export async function GET(req: Request) {
 
     const data = await res.json();
     return NextResponse.json({ route: data });
-  } catch (error: any) {
-    if (error.name === 'AbortError' || error.message?.includes('fetch failed') || error.message?.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
+    if (err.name === 'AbortError' || err.message?.includes('fetch failed') || err.message?.includes('ETIMEDOUT') || err.code === 'ETIMEDOUT') {
       return NextResponse.json({ error: "Route API Timeout" }, { status: 504 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

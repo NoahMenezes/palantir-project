@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 let militaryCache: any[] | null = null;
-let lastCacheTime = 0;
 
 export async function GET() {
   try {
@@ -27,9 +26,25 @@ export async function GET() {
       return NextResponse.json({ flights: [] });
     }
 
+    interface MilitaryAc {
+      hex: string;
+      flight?: string;
+      t?: string;
+      lon: number;
+      lat: number;
+      alt_baro: number | "ground";
+      gs: number;
+      track?: number;
+      geom_rate?: number;
+      baro_rate?: number;
+      alt_geom: number;
+      squawk: string;
+      type: string;
+    }
+
     const validFlights = data.ac
-      .filter((ac: any) => ac.lat !== undefined && ac.lon !== undefined)
-      .map((ac: any) => ({
+      .filter((ac: MilitaryAc) => ac.lat !== undefined && ac.lon !== undefined)
+      .map((ac: MilitaryAc) => ({
         id: ac.hex,
         callsign: ac.flight ? ac.flight.trim() : "UNKNOWN",
         country: ac.t || "MIL", // Military flight type/country
@@ -48,10 +63,9 @@ export async function GET() {
       }));
 
     militaryCache = validFlights;
-    lastCacheTime = Date.now();
 
     return NextResponse.json({ flights: validFlights });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (militaryCache) {
       return NextResponse.json({ flights: militaryCache });
     }

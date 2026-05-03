@@ -31,6 +31,27 @@ const AIRLINE_CODES: Record<string, string> = {
   "SKU": "Sky Airline", "JST": "Jetstar Airways", "VOZ": "Virgin Australia", "RXA": "Regional Express"
 };
 
+export interface Flight {
+  id: string;
+  callsign: string;
+  country: string;
+  longitude: number;
+  latitude: number;
+  baro_altitude: number | null;
+  geo_altitude: number | null;
+  velocity: number | null;
+  track: number;
+  vertical_rate: number | null;
+  squawk: string | null;
+  on_ground: boolean;
+  last_contact: number;
+}
+
+export interface FlightRoute {
+  callsign: string;
+  route: string[];
+}
+
 function getAirlineFromCallsign(callsign: string): string {
   if (!callsign || callsign === "UNKNOWN") return "Private / General";
   const prefix = callsign.substring(0, 3).toUpperCase();
@@ -41,47 +62,57 @@ function getAirlineFromCallsign(callsign: string): string {
 }
 
 export default function AllFlightsPage() {
-  const [flights, setFlights] = useState<any[]>([]);
+  const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFlight, setSelectedFlight] = useState<any | null>(null);
-  const [flightRoute, setFlightRoute] = useState<any | null>(null);
+  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [flightRoute, setFlightRoute] = useState<FlightRoute | null>(null);
 
-  const fetchFlights = async () => {
+  const fetchFlights = React.useCallback(async () => {
     try {
       const res = await fetch("/api/flights");
       const data = await res.json();
-      setFlights(data.flights || []);
+      const newFlights: Flight[] = data.flights || [];
+      setFlights(newFlights);
       setLoading(false);
       
       // Update selected flight if it exists in the new data
       if (selectedFlight) {
-        const updated = data.flights?.find((f: any) => f.id === selectedFlight.id);
+        const updated = newFlights.find((f: Flight) => f.id === selectedFlight.id);
         if (updated) setSelectedFlight(updated);
       }
     } catch (err) {
       console.error(err);
       setLoading(false);
     }
-  };
+  }, [selectedFlight]);
 
   useEffect(() => {
-    fetchFlights();
+    const tid = setTimeout(() => {
+      fetchFlights();
+    }, 0);
     const interval = setInterval(fetchFlights, 10000);
-    return () => clearInterval(interval);
-  }, [selectedFlight?.id]);
+    return () => {
+      clearTimeout(tid);
+      clearInterval(interval);
+    };
+  }, [fetchFlights]);
 
   useEffect(() => {
+    let isMounted = true;
     if (selectedFlight && selectedFlight.callsign && selectedFlight.callsign !== "UNKNOWN") {
-      setFlightRoute(null);
       fetch(`/api/flight-route?callsign=${selectedFlight.callsign}`)
         .then(res => res.json())
         .then(data => {
-          if (data.route && data.route.route) setFlightRoute(data.route);
+          if (isMounted && data.route) setFlightRoute(data.route);
         }).catch(err => console.error(err));
     } else {
-      setFlightRoute(null);
+      const tid = setTimeout(() => {
+        if (isMounted) setFlightRoute(null);
+      }, 0);
+      return () => clearTimeout(tid);
     }
-  }, [selectedFlight?.id]);
+    return () => { isMounted = false; };
+  }, [selectedFlight]);
 
   const isGlobeMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'globe';
 
