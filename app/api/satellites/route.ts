@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
 export const revalidate = 21600; // Cache for 6 hours
 
 export async function GET() {
   try {
-    // Fetch active satellites from Celestrak (Public Data)
-    const res = await fetch("https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle");
+    // We read from our locally cached Starlink TLE database to bypass Celestrak rate-limits
+    const filePath = path.join(process.cwd(), "public", "starlink.txt");
+    const text = fs.readFileSync(filePath, "utf8");
     
-    if (!res.ok) {
-      throw new Error(`Celestrak returned ${res.status}`);
-    }
-
-    const text = await res.text();
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const satellites = [];
 
@@ -22,6 +20,8 @@ export async function GET() {
       const tleLine2 = lines[i + 2];
 
       if (!name || !tleLine1 || !tleLine2) continue;
+      // Basic check to ensure it looks like a TLE
+      if (tleLine1.charAt(0) !== '1' || tleLine2.charAt(0) !== '2') continue;
 
       const id = tleLine1.substring(2, 7).trim();
 

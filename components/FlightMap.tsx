@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import DeckGL from "@deck.gl/react";
-import { IconLayer, BitmapLayer } from "@deck.gl/layers";
+import { IconLayer, BitmapLayer, PathLayer } from "@deck.gl/layers";
 import { _GlobeView as GlobeView, MapView } from "@deck.gl/core";
 import { TileLayer } from "@deck.gl/geo-layers";
 import Map, { NavigationControl } from "react-map-gl/maplibre";
@@ -301,9 +301,27 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
     }
   }, [activeLayers.satellites]);
 
-  // Fetch Origin/Destination routing when a flight is selected!
+  // Fetch Origin/Destination routing or calculate Orbit when a feature is selected!
   useEffect(() => {
-    if (
+    if (selectedFlight && selectedFlight.isSatellite && selectedFlight.satrec) {
+      // Calculate 1 full orbit (~100 mins) into the future
+      const points = [];
+      const now = new Date();
+      for (let i = 0; i <= 100; i++) {
+        const futureDate = new Date(now.getTime() + i * 60000); // i minutes
+        const posAndVel = satellite.propagate(selectedFlight.satrec, futureDate);
+        if (posAndVel.position && typeof posAndVel.position !== "boolean") {
+          const gmst = satellite.gstime(futureDate);
+          const positionGd = satellite.eciToGeodetic(posAndVel.position as any, gmst);
+          points.push([
+            satellite.degreesLong(positionGd.longitude),
+            satellite.degreesLat(positionGd.latitude),
+            isGlobeMode ? positionGd.height * 1000 : 0
+          ]);
+        }
+      }
+      setFlightRoute({ points });
+    } else if (
       selectedFlight &&
       !selectedFlight.isSatellite &&
       selectedFlight.callsign &&
@@ -321,7 +339,7 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
     } else {
       setFlightRoute(null);
     }
-  }, [selectedFlight?.id]);
+  }, [selectedFlight?.id, isGlobeMode]);
 
   // Background map tiles for the 3D Globe mode
   const globeBackgroundLayer = new TileLayer({
@@ -421,7 +439,14 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
         }
       },
     }) : null,
-    flightRoute && flightRoute.points && activeLayers.flights
+    flightRoute && flightRoute.points ? new PathLayer({
+      id: "flight-route",
+      data: [flightRoute],
+      getPath: (d: any) => d.points,
+      getColor: selectedFlight?.isSatellite ? [0, 229, 255, 200] : [255, 255, 255, 200],
+      getWidth: 3,
+      widthMinPixels: 2,
+    }) : null
   ].filter(Boolean);
 
   const views = isGlobeMode
