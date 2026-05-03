@@ -8,10 +8,10 @@ export default function WorldviewPage() {
       <Navbar />
 
       {/* UI Overlay */}
-      <div className="relative z-10 w-full flex-1 p-8 lg:p-16 pt-32 flex flex-col">
+      <div className="relative z-10 w-full flex-1 p-4 lg:p-6 pt-24 lg:pt-32 flex flex-col">
         
         {/* Header Section */}
-        <div className="flex flex-col pointer-events-auto items-start mb-8">
+        <div className="flex flex-col pointer-events-auto items-start mb-6">
           <div className="liquid-glass border border-white/10 rounded-xl px-4 py-2 mb-4 inline-flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse shadow-[0_0_10px_#00E5FF]" />
             <span className="text-xs font-mono text-[#00E5FF] uppercase tracking-widest font-bold">Live Uplink</span>
@@ -23,7 +23,7 @@ export default function WorldviewPage() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex flex-col xl:flex-row gap-8 w-full flex-1 items-stretch">
+        <div className="flex flex-col xl:flex-row gap-6 w-full flex-1 items-stretch">
           
           {/* Left Side: Data Layers Sidebar */}
           <div className="w-full xl:w-[340px] shrink-0 pointer-events-auto">
@@ -31,7 +31,7 @@ export default function WorldviewPage() {
           </div>
           
           {/* Right Side: Flight Radar Map */}
-          <div className="flex-1 w-full min-h-[60vh] pointer-events-auto relative">
+          <div className="flex-1 w-full min-h-[80vh] pointer-events-auto relative">
             <FlightMap />
           </div>
 

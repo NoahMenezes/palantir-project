@@ -11,13 +11,18 @@ export async function GET() {
   const auth = Buffer.from(`${username}:${password}`).toString("base64");
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const res = await fetch("https://opensky-network.org/api/states/all", {
       headers: {
         "Authorization": `Basic ${auth}`
       },
-      // Keep fresh data every 10 seconds
-      next: { revalidate: 10 }
+      next: { revalidate: 15 },
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       return NextResponse.json({ error: `Failed to fetch from OpenSky: ${res.status}` }, { status: res.status });
@@ -25,11 +30,9 @@ export async function GET() {
 
     const data = await res.json();
     
-    // The 'states' array contains flight vectors. 
     // Indices: 0: icao24, 1: callsign, 2: origin_country, 5: longitude, 6: latitude, 8: on_ground
     const validFlights = (data.states || [])
       .filter((state: any) => state[5] !== null && state[6] !== null && state[8] === false)
-      .slice(0, 800) // Display 800 planes for a rich map experience
       .map((state: any) => ({
         id: state[0],
         callsign: state[1] ? state[1].trim() : "UNKNOWN",
