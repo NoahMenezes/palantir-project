@@ -391,7 +391,7 @@ export function FlightMap() {
           {/* Bottom Panel Link */}
           <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-auto transition-opacity duration-300 ${!hudEnabled ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <Link
-              href="/flights"
+              href={`/flights?from=${isGlobeMode ? 'globe' : 'map'}`}
               className="bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 text-[#00E5FF] backdrop-blur-md px-6 py-3 rounded-full border border-[#00E5FF]/30 transition-all font-mono text-xs uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(0,229,255,0.1)] hover:shadow-[0_0_30px_rgba(0,229,255,0.2)]"
             >
               <ExternalLink className="w-4 h-4" />
