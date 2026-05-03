@@ -197,7 +197,11 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
   const fetchFlights = async () => {
     if (!activeLayers.flights) return;
     try {
-      const res = await fetch("/api/flights");
+      // Send the current view state center to fetch local 250nm ADSB.lol data dynamically
+      const lat = viewState.latitude.toFixed(4);
+      const lng = viewState.longitude.toFixed(4);
+      
+      const res = await fetch(`/api/flights?lat=${lat}&lng=${lng}`);
       if (!res.ok) throw new Error("Failed to fetch flight data");
 
       const data = await res.json();
@@ -205,13 +209,15 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
 
       // Protect against empty arrays from timeout/throttling
       if (data.flights && data.flights.length > 0) {
-        setFlights(data.flights);
-        if (onFlightsUpdate) onFlightsUpdate(data.flights.length);
+        const now = Date.now();
+        const flightsWithTimestamp = data.flights.map((f: any) => ({ ...f, lastUpdated: now }));
+        setFlights(flightsWithTimestamp);
+        if (onFlightsUpdate) onFlightsUpdate(flightsWithTimestamp.length);
 
         // If a flight is selected, automatically update its metrics with the new data
         setSelectedFlight((prev: any) => {
           if (!prev) return null;
-          const updated = data.flights.find((f: any) => f.id === prev.id);
+          const updated = flightsWithTimestamp.find((f: any) => f.id === prev.id);
           
           if (sparse && updated) {
             setViewState((v) => ({
@@ -283,14 +289,15 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
     }
   }, [activeLayers.satellites]);
 
-  // Real-time animation loop for satellites
+  // Real-time animation loop for both satellites and dead-reckoning flights
+  const shouldAnimate = activeLayers.satellites || activeLayers.flights;
   useEffect(() => {
-    if (activeLayers.satellites) {
+    if (shouldAnimate) {
       let lastUpdate = Date.now();
       const updateTick = () => {
         const now = Date.now();
-        // Update at ~10fps to save CPU but remain smooth
-        if (now - lastUpdate > 100) {
+        // Update at ~20fps to save CPU but remain buttery smooth
+        if (now - lastUpdate > 50) {
           setTimeTick(now);
           lastUpdate = now;
         }
@@ -299,7 +306,7 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
       requestRef.current = requestAnimationFrame(updateTick);
       return () => cancelAnimationFrame(requestRef.current!);
     }
-  }, [activeLayers.satellites]);
+  }, [shouldAnimate]);
 
   // Fetch Origin/Destination routing or calculate Orbit when a feature is selected!
   useEffect(() => {
@@ -372,15 +379,39 @@ export function FlightMap({ onFlightsUpdate, onSatellitesUpdate, activeLayers, t
         mask: true,
       }),
       sizeScale: 1,
-      getPosition: (d: any) => [
-        d.lng,
-        d.lat,
-        isGlobeMode ? d.baro_altitude || 10000 : 0,
-      ],
+      getPosition: (d: any) => {
+        if (!d.lastUpdated || !d.velocity || d.track == null) {
+          return [d.lng, d.lat, isGlobeMode ? d.baro_altitude || 10000 : 0];
+        }
+        
+        // Dead reckoning: calculate exact position based on velocity and heading
+        const secondsElapsed = (timeTick - d.lastUpdated) / 1000;
+        const distanceMeters = d.velocity * secondsElapsed;
+        
+        // Convert heading to radians
+        const trackRad = (d.track * Math.PI) / 180;
+        
+        // delta x (longitude) and delta y (latitude)
+        const dx = distanceMeters * Math.sin(trackRad);
+        const dy = distanceMeters * Math.cos(trackRad);
+        
+        // Approx meters per degree
+        const deltaLat = dy / 111320;
+        const deltaLng = dx / (111320 * Math.cos((d.lat * Math.PI) / 180));
+        
+        return [
+          d.lng + deltaLng,
+          d.lat + deltaLat,
+          isGlobeMode ? (d.baro_altitude || 10000) + ((d.vertical_rate || 0) * secondsElapsed) : 0
+        ];
+      },
       getSize: (d) => (isGlobeMode ? 32 : bloom > 120 ? 30 : 24),
       getAngle: (d: any) => d.track || 0,
       getColor: (d: any) => getAltitudeColor(d.geo_altitude || d.baro_altitude),
       autoHighlight: true,
+      updateTriggers: {
+        getPosition: [timeTick]
+      },
       onClick: ({ object }) => {
         if (object) {
           setSelectedFlight(object);
