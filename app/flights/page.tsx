@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Plane } from "lucide-react";
+import { ArrowLeft, Loader2, Plane, X } from "lucide-react";
 
 // Massive dictionary of standard ICAO Airline Codes
 const AIRLINE_CODES: Record<string, string> = {
@@ -83,6 +83,8 @@ export default function AllFlightsPage() {
     }
   }, [selectedFlight?.id]);
 
+  const isGlobeMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'globe';
+
   return (
     <div className="bg-black min-h-screen relative text-white overflow-hidden flex flex-col">
       <Navbar />
@@ -102,7 +104,7 @@ export default function AllFlightsPage() {
             
             <Link href="/worldview" className="bg-white/10 hover:bg-white/20 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 transition-all font-mono text-xs uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]">
               <ArrowLeft className="w-4 h-4" />
-              Back to Radar Map
+              {isGlobeMode ? "Back to Planet View" : "Back to Radar Map"}
             </Link>
           </div>
 

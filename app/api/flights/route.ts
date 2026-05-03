@@ -52,7 +52,10 @@ export async function GET() {
 
     return NextResponse.json({ flights: validFlights });
   } catch (error: any) {
-    console.error("OpenSky API Error:", error);
+    // Suppress the giant ETIMEDOUT stack traces in the terminal
+    if (error.name === 'AbortError' || error.message?.includes('fetch failed') || error.message?.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
+      return NextResponse.json({ error: "OpenSky API Timeout" }, { status: 504 });
+    }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
