@@ -27,7 +27,7 @@ export function TacticalSidebar({
   cleanUi
 }: TacticalSidebarProps) {
   return (
-    <div className="w-[280px] flex flex-col gap-3 font-mono text-[11px] tracking-widest uppercase text-white/70">
+    <div className="w-full flex flex-col gap-3 font-mono text-[11px] tracking-widest uppercase text-white/70">
       
       {/* MOVE */}
       <div className="bg-[#0A0A0C]/80 border border-white/10 rounded-2xl p-3 flex items-center justify-between group hover:border-white/20 transition-all cursor-pointer">

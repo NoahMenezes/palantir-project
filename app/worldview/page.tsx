@@ -45,29 +45,27 @@ export default function WorldviewPage() {
         {/* Main Content Area */}
         <div className="flex flex-col xl:flex-row gap-6 w-full flex-1 items-stretch">
 
-          {/* Left Side: Data Layers Sidebar */}
-          <div className={`w-full xl:w-[320px] shrink-0 pointer-events-auto transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+          {/* Left Side: Sidebars (DataLayers + Tactical) */}
+          <div className={`w-full xl:w-[340px] shrink-0 pointer-events-auto flex flex-col gap-6 transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <DataLayersSidebar flightCount={flightCount} />
+            <div className="w-full">
+              <TacticalSidebar
+                bloom={bloom} setBloom={setBloom}
+                sharpen={sharpen} setSharpen={setSharpen}
+                hud={hud} setHud={setHud}
+                sparse={sparse} setSparse={setSparse}
+                density={density} setDensity={setDensity}
+                cleanUi={cleanUi}
+              />
+            </div>
           </div>
-
-          {/* Middle: Flight Radar Map */}
+          
+          {/* Right Side: Flight Radar Map (Takes up all remaining space) */}
           <div className="flex-1 w-full min-h-[80vh] pointer-events-auto relative">
             <FlightMap
               onFlightsUpdate={setFlightCount}
               tacticalOptions={{ bloom, sharpen, hud, sparse, density }}
               onRestoreHud={() => setHud(true)}
-            />
-          </div>
-
-          {/* Right Side: Tactical Sidebar */}
-          <div className={`w-full xl:w-[280px] shrink-0 pointer-events-auto transition-opacity duration-300 ${!hud ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-            <TacticalSidebar
-              bloom={bloom} setBloom={setBloom}
-              sharpen={sharpen} setSharpen={setSharpen}
-              hud={hud} setHud={setHud}
-              sparse={sparse} setSparse={setSparse}
-              density={density} setDensity={setDensity}
-              cleanUi={cleanUi}
             />
           </div>
 
