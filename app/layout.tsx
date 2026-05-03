@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Barlow } from "next/font/google";
+import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -26,13 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${instrumentSerif.variable} ${barlow.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-black text-white font-body">
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html
+        lang="en"
+        className={`${instrumentSerif.variable} ${barlow.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col bg-black text-white font-body">
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
