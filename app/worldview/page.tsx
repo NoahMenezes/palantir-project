@@ -1,7 +1,7 @@
 "use client";
 
 import { DataLayersSidebar } from "@/components/DataLayersSidebar";
-import { FlightMap } from "@/components/FlightMap";
+import { WorldviewMap } from "@/components/WorldviewMap";
 import { Navbar } from "@/components/Navbar";
 import { TacticalSidebar } from "@/components/TacticalSidebar";
 import { WeatherLayerType } from "@/components/WeatherControls";
@@ -10,11 +10,13 @@ import React, { useState, useEffect, useCallback } from "react";
 export default function WorldviewPage() {
   const [flightCount, setFlightCount] = useState<number>(0);
   const [satelliteCount, setSatelliteCount] = useState<number>(0);
+  const [shipCount, setShipCount] = useState<number>(0);
   
   // By default, flights are visible
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     flights: true,
     satellites: false,
+    ships: false,
     weather: false
   });
 
@@ -94,6 +96,7 @@ export default function WorldviewPage() {
             <DataLayersSidebar 
               flightCount={flightCount} 
               satelliteCount={satelliteCount}
+              shipCount={shipCount}
               activeLayers={activeLayers}
               toggleLayer={toggleLayer}
             />
@@ -111,9 +114,10 @@ export default function WorldviewPage() {
           
           {/* Right Side: Flight Radar Map (Takes up all remaining space) */}
           <div className="flex-1 w-full min-h-[80vh] pointer-events-auto relative">
-            <FlightMap
+            <WorldviewMap
               onFlightsUpdate={setFlightCount}
               onSatellitesUpdate={setSatelliteCount}
+              onShipsUpdate={setShipCount}
               activeLayers={activeLayers}
               tacticalOptions={{ bloom, sharpen, hud, sparse, density }}
               onRestoreHud={() => setHud(true)}

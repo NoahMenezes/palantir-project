@@ -1,12 +1,13 @@
 "use client";
 
-import { Plane, Medal, Activity, Satellite, Car, CloudRain, Cctv, Bike, Minus } from "lucide-react";
+import { Plane, Medal, Activity, Satellite, Car, CloudRain, Cctv, Bike, Minus, Anchor } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 
 const LAYERS = [
   { id: "flights", icon: Plane, name: "Live Flights", source: "OpenSky Network", time: "5m ago", count: "6.9K", iconColor: "text-blue-400" },
   { id: "military", icon: Medal, name: "Military Flights", source: "adsb.lol", time: "4m ago", count: "156", iconColor: "text-yellow-500" },
+  { id: "ships", icon: Anchor, name: "Ocean Vehicles", source: "Global AIS", time: "live", count: "840", iconColor: "text-cyan-400" },
   { id: "earthquakes", icon: Activity, name: "Earthquakes (24h)", source: "USGS", time: "never", count: "-", iconColor: "text-orange-400" },
   { id: "satellites", icon: Satellite, name: "Satellites", source: "CelesTrak", time: "10m ago", count: "180", iconColor: "text-blue-500" },
   { id: "traffic", icon: Car, name: "Street Traffic", source: "OpenStreetMap", time: "loading...", count: "-", iconColor: "text-red-500" },
@@ -18,11 +19,12 @@ const LAYERS = [
 interface DataLayersSidebarProps {
   flightCount?: number;
   satelliteCount?: number;
+  shipCount?: number;
   activeLayers: Record<string, boolean>;
   toggleLayer: (id: string) => void;
 }
 
-export function DataLayersSidebar({ flightCount, satelliteCount, activeLayers, toggleLayer }: DataLayersSidebarProps) {
+export function DataLayersSidebar({ flightCount, satelliteCount, shipCount, activeLayers, toggleLayer }: DataLayersSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const getCountDisplay = (layerId: string, hardcodedCount: string) => {
@@ -33,6 +35,10 @@ export function DataLayersSidebar({ flightCount, satelliteCount, activeLayers, t
     if (layerId === "satellites" && satelliteCount !== undefined) {
       if (satelliteCount >= 1000) return `${(satelliteCount / 1000).toFixed(1)}K`;
       return satelliteCount.toString();
+    }
+    if (layerId === "ships" && shipCount !== undefined) {
+      if (shipCount >= 1000) return `${(shipCount / 1000).toFixed(1)}K`;
+      return shipCount.toString();
     }
     return hardcodedCount;
   };
